@@ -7,6 +7,7 @@ import Login from "../src/components/loginPage"
 import Dashboard from './components/dashboard';
 import RideBooking from './components/rideBooking';
 import LocationPicker from './service/locationPicker';
+import CarpoolScreen from './components/CarpoolScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -65,6 +66,8 @@ const App = () => {
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: true }} />
         <Stack.Screen name="RideBooking" component={RideBooking} options={{ headerShown: true }} />
         <Stack.Screen name="LocationPicker" component={LocationPicker} options={{ headerShown: true }} />
+        <Stack.Screen name="CarpoolScreen" component={CarpoolScreen} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );

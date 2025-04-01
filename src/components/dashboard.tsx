@@ -18,7 +18,7 @@ const Dashboard = () => {
       title: 'Carpooling',
       description: 'Share rides and save costs.',
       icon: 'account-group',
-      route: 'Dashboard',
+      route: 'CarpoolScreen',
       source:require('../assets/download-1.jpg')
     },
     {
