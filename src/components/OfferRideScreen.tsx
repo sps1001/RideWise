@@ -14,15 +14,23 @@ const OfferRideScreen = () => {
     useEffect(() => {
         const fetchActiveUsers = async () => {
             try {
+                console.log("Fetching active users...");
                 const usersRef = collection(db, 'users');
                 const activeUsersQuery = query(usersRef, where('isActive', '==', true));
                 const usersSnapshot = await getDocs(activeUsersQuery);
+
+                if (usersSnapshot.empty) {
+                    console.log("No active users found.");
+                }
+
                 const usersList = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log("Fetched users:", usersList);
                 setActiveUsers(usersList);
             } catch (error) {
                 console.error('Error fetching active users:', error);
             }
         };
+
 
         fetchActiveUsers();
     }, []);
