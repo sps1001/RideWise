@@ -46,9 +46,7 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
         <Text style={styles.menuItem} >Dashboard</Text>
         </TouchableOpacity>
         <Text style={styles.menuItem}>Analytics</Text>
-        <TouchableOpacity onPress={() => {navigation.navigate('Settings')}}>
         <Text style={styles.menuItem}>Settings</Text>
-        </TouchableOpacity> 
       </Animated.View>
 
       {/* Top Bar */}

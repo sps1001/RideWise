@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../service/firebase'; // Ensure correct path to firebase.ts
 
-// Mock Data (replace with Firebase data later)
+// Hardcoded user groups
 const userGroups = [
   { id: '1', groupName: 'IITJ to Paota', route: 'IITJ ➝ Paota', members: ['Harsh', 'Sahil'] },
   { id: '2', groupName: 'Station to IITJ', route: 'Station ➝ IITJ', members: ['Rishi', 'Parth'] },
@@ -10,7 +12,34 @@ const userGroups = [
 
 const CarpoolScreen = () => {
   const navigation = useNavigation();
-  const [groups, setGroups] = useState(userGroups); // User's carpool groups
+  const [groups, setGroups] = useState(userGroups); // Merge Firebase data later
+  const [activeUsers, setActiveUsers] = useState([]); // Store active users
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch carpool groups from Firestore
+        const groupsRef = collection(db, 'carpoolGroups');
+        const groupsSnapshot = await getDocs(groupsRef);
+        const firebaseGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Merge Firebase groups with hardcoded groups
+        setGroups([...userGroups, ...firebaseGroups]);
+
+        // Fetch active users from Firestore
+        const usersRef = collection(db, 'users');
+        const activeUsersQuery = query(usersRef, where('isActive', '==', true));
+        const usersSnapshot = await getDocs(activeUsersQuery);
+        const activeUsersList = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        setActiveUsers(activeUsersList);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleGroupClick = (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
@@ -19,13 +48,19 @@ const CarpoolScreen = () => {
     }
   };
 
+  // const handleOfferRide = (groupId: string) => {
+  //   const group = groups.find(g => g.id === groupId);
+  //   if (group) {
+  //     console.log(`Notifying members of ${group.groupName} about the ride offer.`);
+
+  //     // List active users
+  //     const activeUserNames = activeUsers.map(user => user.name).join(', ') || 'No active users';
+  //     alert(`Offering ride to active users: ${activeUserNames}`);
+  //   }
+  // };
+
   const handleOfferRide = (groupId: string) => {
-    const group = groups.find(g => g.id === groupId);
-    if (group) {
-      console.log(`Notifying members of ${group.groupName} about the ride offer.`);
-      // Firebase logic to send notification to all members
-      // sendRideOfferNotification(group.members);
-    }
+    navigation.navigate('OfferRide', { groupId });
   };
 
   const handleInboxClick = () => {
