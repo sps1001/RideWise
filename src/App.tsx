@@ -8,6 +8,9 @@ import Dashboard from './components/dashboard';
 import RideBooking from './components/rideBooking';
 import LocationPicker from './service/locationPicker';
 import CarpoolScreen from './components/CarpoolScreen';
+import OfferRideScreen from './components/OfferRideScreen';
+import { ThemeProvider } from './service/themeContext';
+import Settings from './components/settings';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,6 +22,9 @@ export type RootStackParamList = {
     which:string;
     onLocationSelect: (lat: number, long: number) => void;
   };
+  CarpoolScreen: undefined;
+  Settings: undefined;
+  OfferRideScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -60,6 +66,7 @@ const App = () => {
   }
 
   return (
+    <ThemeProvider>
     <NavigationContainer>
       <Stack.Navigator initialRouteName={isAuthenticated ? 'Dashboard' : 'Login'}>
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
@@ -67,9 +74,11 @@ const App = () => {
         <Stack.Screen name="RideBooking" component={RideBooking} options={{ headerShown: true }} />
         <Stack.Screen name="LocationPicker" component={LocationPicker} options={{ headerShown: true }} />
         <Stack.Screen name="CarpoolScreen" component={CarpoolScreen} />
-
+        <Stack.Screen name="Settings" component={Settings} />
+        <Stack.Screen name="OfferRideScreen" component={OfferRideScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+    </ThemeProvider>
   );
 };
 
