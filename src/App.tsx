@@ -11,6 +11,7 @@ import CarpoolScreen from './components/CarpoolScreen';
 import InboxScreen from './components/InboxScreen';
 import GroupDetails from './components/GroupDetailsScreen';
 import OfferRideScreen from './components/OfferRideScreen';
+import RideHistory from './components/RideHistory';
 
 import { ThemeProvider } from './service/themeContext';
 import Settings from './components/settings';
@@ -82,6 +83,7 @@ const App = () => {
           <Stack.Screen name="GroupDetails" component={GroupDetails} />
           <Stack.Screen name="OfferRide" component={OfferRideScreen} />
           <Stack.Screen name="Inbox" component={InboxScreen} />
+          <Stack.Screen name="RideHistory" component={RideHistory} />
 
 
         </Stack.Navigator>

@@ -25,7 +25,7 @@ const Dashboard = () => {
       title: 'My Rides',
       description: 'View your upcoming and past rides.',
       icon: 'history',
-      route: 'Dashboard',
+      route: 'RideHistory',
       source:require('../assets/images.jpg')
     },
   ];
