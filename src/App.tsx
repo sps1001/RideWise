@@ -11,6 +11,7 @@ import CarpoolScreen from './components/CarpoolScreen';
 import GroupDetailsScreen from './components/GroupDetailsScreen';
 import InboxScreen from './components/InboxScreen';
 import OfferRideScreen from './components/OfferRideScreen';
+import RideHistory from './components/RideHistory';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -73,7 +74,7 @@ const App = () => {
         <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
         <Stack.Screen name="OfferRide" component={OfferRideScreen} />
         <Stack.Screen name="Inbox" component={InboxScreen} />
-
+        <Stack.Screen name="RideHistory" component={RideHistory} options={{ headerShown: true }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
