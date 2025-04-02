@@ -24,8 +24,15 @@ const InboxScreen = () => {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.groupName}>{item.groupName}</Text>
-            <Text>Sender: {item.sender}</Text>  {/* Wrap text correctly */}
-            <Text>Status: {item.status}</Text>
+            <Text>
+          <Text style={{ fontWeight: 'bold' }}>Sender: </Text> 
+           {String(item.sender)}
+          </Text>
+
+          <Text>
+            <Text style={{ fontWeight: 'bold' }}>Status: </Text> 
+            {String(item.status)}
+          </Text>
             {item.status === 'pending' && (
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
