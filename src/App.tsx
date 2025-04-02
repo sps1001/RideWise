@@ -8,9 +8,12 @@ import Dashboard from './components/dashboard';
 import RideBooking from './components/rideBooking';
 import LocationPicker from './service/locationPicker';
 import CarpoolScreen from './components/CarpoolScreen';
-import OfferRideScreen from './components/OfferRideScreen';
+import InboxScreen from './components/InboxScreen';
+import GroupDetails from './components/GroupDetailsScreen';
+
 import { ThemeProvider } from './service/themeContext';
 import Settings from './components/settings';
+import GroupDetailsScreen from './components/GroupDetailsScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -75,7 +78,8 @@ const App = () => {
         <Stack.Screen name="LocationPicker" component={LocationPicker} options={{ headerShown: true }} />
         <Stack.Screen name="CarpoolScreen" component={CarpoolScreen} />
         <Stack.Screen name="Settings" component={Settings} />
-        <Stack.Screen name="OfferRideScreen" component={OfferRideScreen} />
+        <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
+        <Stack.Screen name="Inbox" component={InboxScreen} />
       </Stack.Navigator>
     </NavigationContainer>
     </ThemeProvider>
