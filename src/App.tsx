@@ -79,7 +79,7 @@ const App = () => {
           <Stack.Screen name="LocationPicker" component={LocationPicker} options={{ headerShown: true }} />
           <Stack.Screen name="CarpoolScreen" component={CarpoolScreen} />
           <Stack.Screen name="Settings" component={Settings} />
-          <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
+          <Stack.Screen name="GroupDetails" component={GroupDetails} />
           <Stack.Screen name="OfferRide" component={OfferRideScreen} />
           <Stack.Screen name="Inbox" component={InboxScreen} />
 
