@@ -1,10 +1,13 @@
-import { useState ,useEffect} from 'react';
-import { View, Text, TextInput, TouchableOpacity,ActivityIndicator, StyleSheet, ScrollView,ToastAndroid ,Platform,Alert} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import { signUp,signIn } from '../service/auth';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid, Platform, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { signUp, signIn } from '../service/auth';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../service/firebase';
 
 
 const Login = () => {
@@ -22,56 +25,49 @@ const Login = () => {
     }
   };
 
+
   const handleAuthAction = async () => {
-    
     if (isLogin) {
-      const resp=await signIn(email,password);
-      
-      if (resp) { 
-        console.log("Authenticated User:", resp);
-        
+      const resp = await signIn(email, password);
+
+      if (resp) {
         showToast('Logged in successfully!');
-        const token=resp.accessToken;
-        const { exp } = JSON.parse(atob(token.split('.')[1]));
+        const token = resp.accessToken;
+        const uid = resp.uid;
+
         await AsyncStorage.setItem('authToken', token);
-        await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry
 
-        const ton = await AsyncStorage.getItem('authToken');
-        console.log("Token:", ton);
-
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Dashboard' }],
-          })
-        );
-        
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+          navigation.navigate('UsernameScreen', { uid });  // ask username only once
+        } else {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' }],
+            })
+          );
+        }
       } else {
         showToast('Login Failed: Invalid email or password.');
       }
     } else {
-      if (password === confirmPassword) {
-        const rep = await signUp(email, password); // Await signup function
-
-        if (rep) {
-          console.log("New User Created:", rep);
-
-          showToast('Account created successfully!');
-
-          navigation.navigate('Dashboard'); // Navigate after successful signup
-        } else {
-          showToast('Signup Failed: Something went wrong!');
-        }
+      // SIGNUP
+      const rep = await signUp(email, password);
+      if (rep) {
+        const uid = rep.uid;
+        navigation.navigate('UsernameScreen', { uid });
       } else {
-        showToast('Passwords do not match!');
+        showToast('Signup Failed: Something went wrong!');
       }
     }
   };
 
+
   return (
     <LinearGradient colors={['lightblue', 'aquamarine']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        
+
         <Text style={styles.title}>RideWise</Text>
         <View style={styles.card}>
           <Text style={styles.subtitle}>{isLogin ? 'Login' : 'Sign Up'}</Text>
@@ -113,14 +109,14 @@ const Login = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-            <Text style={styles.switchText}>
-              {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          <Text style={styles.switchText}>
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          </Text>
+          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+            <Text style={styles.bottomtext}>
+              {isLogin ? 'signup' : 'login'}
             </Text>
-            <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-              <Text style={styles.bottomtext}>
-                {isLogin ? 'signup' : 'login'}
-              </Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </LinearGradient>
@@ -193,7 +189,7 @@ const styles = StyleSheet.create({
     color: '#6200ee',
     marginTop: 10,
   },
-  bottomtext:{
+  bottomtext: {
     color: '#6200ee',
     marginTop: 10,
     textAlign: 'center',
