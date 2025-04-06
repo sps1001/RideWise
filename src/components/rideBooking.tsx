@@ -222,14 +222,14 @@ const RideBooking = () => {
       {endSuggestions.length > 0 && (
         <View>
         <FlatList
-          data={startSuggestions}
+          data={endSuggestions}
           keyExtractor={(item) => item.place_id}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.suggestionItem}
               onPress={() => {
-                setStartLocation(item.description);
-                setStartSuggestions([]);
+                setEndLocation(item.description);
+                setEndSuggestions([]);
               }}
             >
               <Text>{item.description}</Text>
