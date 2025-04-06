@@ -102,6 +102,7 @@ const navigation = useNavigation<NavigationProp>();
         const { exp } = JSON.parse(atob(token.split('.')[1]));
         await AsyncStorage.setItem('authToken', token);
         await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry time
+        await AsyncStorage.setItem('uid', uid); // Save UID
 
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (!userDoc.exists()) {

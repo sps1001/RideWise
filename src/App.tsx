@@ -13,10 +13,11 @@ import GroupDetails from './components/GroupDetailsScreen';
 import OfferRideScreen from './components/OfferRideScreen';
 import RideHistory from './components/RideHistory';
 import UsernameScreen from './components/UsernameScreen';
-
+import UpdateProfile from './components/UpdateProfile';
 import { ThemeProvider } from './service/themeContext';
 import Settings from './components/settings';
 import GroupDetailsScreen from './components/GroupDetailsScreen';
+import ResetPassword from './components/ResetPassword';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -36,6 +37,10 @@ export type RootStackParamList = {
   UsernameScreen : {
     uid: string;
   };
+  UpdateProfile:{
+    uid: string;
+  };  
+  ResetPassword: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -92,6 +97,8 @@ const App = () => {
           <Stack.Screen name="Inbox" component={InboxScreen} />
           <Stack.Screen name="RideHistory" component={RideHistory} />
           <Stack.Screen name="GroupDetailsScreen" component={GroupDetailsScreen} />
+          <Stack.Screen name="UpdateProfile" component={UpdateProfile} />
+          <Stack.Screen name="ResetPassword" component={ResetPassword} />
 
         </Stack.Navigator>
       </NavigationContainer>

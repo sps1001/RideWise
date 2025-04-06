@@ -1,21 +1,46 @@
 import React from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, StyleSheet , ScrollView,hr} from 'react-native';
 import { useTheme } from '../service/themeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 const Settings = () => {
+    const navigation = useNavigation();
   const { isDarkMode, toggleDarkMode } = useTheme();
 
   return (
-    <View style={[styles.container, isDarkMode && styles.darkBackground]}>
+    <ScrollView style={[styles.container, isDarkMode && styles.darkBackground]}>
       <Text style={[styles.title, isDarkMode && styles.darkText]}>Settings</Text>
+
+      {/* Dark Mode */}
       <View style={styles.settingItem}>
         <Text style={[styles.settingText, isDarkMode && styles.darkText]}>Dark Mode</Text>
         <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
       </View>
-      <TouchableOpacity style={[styles.button, isDarkMode && styles.darkButton]}>
-        <Text style={[styles.buttonText, isDarkMode && styles.darkText]}>Manage Account</Text>
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View style={{flex: 1, height: 1, backgroundColor: 'black'}} />
+      </View>
+      {/* Update Profile */}
+      <TouchableOpacity
+        style={styles.settingItem}
+        onPress={async () => {
+            const uid=await AsyncStorage.getItem('uid');
+            // Navigate to the Update Profile screen
+            navigation.navigate('UpdateProfile',{uid});
+        }}>
+        <Text style={[styles.settingText, isDarkMode && styles.darkText]}>Update Profile</Text>
       </TouchableOpacity>
-    </View>
+
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View style={{flex: 1, height: 1, backgroundColor: 'black'}} />
+      </View>
+      {/* Reset Password */}
+      <TouchableOpacity
+        style={styles.settingItem}
+        onPress={() => navigation.navigate('ResetPassword')}>
+        <Text style={[styles.settingText, isDarkMode && styles.darkText]}>Change Password</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
