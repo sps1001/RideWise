@@ -6,11 +6,13 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendEmailVerification } from 'firebase/auth';
 import { useNavigation} from '@react-navigation/native';
-import { auth } from '../service/firebase';
+import { auth,db } from '../service/firebase';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { doc, getDoc } from 'firebase/firestore';
+import { RootStackParamList } from '../App';
 
 
 const Login = () => {
-  const navigation = useNavigation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,6 +20,9 @@ const Login = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [countdown, setCountdown] = useState(120);
   const [signedUpEmail, setSignedUpEmail] = useState('');
+
+  type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -78,7 +83,6 @@ const Login = () => {
   }
 
   const handleAuthAction = async () => {
-    
     if (isLogin) {
 
       const resp=await signIn(email,password);
@@ -94,20 +98,22 @@ const Login = () => {
 
         showToast('Logged in successfully! and user verfified');
         const token=resp.accessToken;
+        const uid:string=resp.uid;
         const { exp } = JSON.parse(atob(token.split('.')[1]));
         await AsyncStorage.setItem('authToken', token);
-        await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry
+        await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry time
 
-        const ton = await AsyncStorage.getItem('authToken');
-        console.log("Token:", ton);
-
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Dashboard' }],
-          })
-        );
-        
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (!userDoc.exists()) {
+          navigation.navigate('UsernameScreen', { uid });
+        } else {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' }],
+            })
+          );
+        }
       } else {
         showToast('Login Failed: Invalid email or password.');
       }
@@ -124,17 +130,18 @@ const Login = () => {
           showToast('Signup Failed: Something went wrong!');
         }
       } else {
-        showToast('Passwords do not match!');
+        showToast('Signup Failed: Something went wrong!');
       }
       
       
     }
   };
 
+
   return (
     <LinearGradient colors={['lightblue', 'aquamarine']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        
+
         <Text style={styles.title}>RideWise</Text>
         <View style={styles.card}>
           <Text style={styles.subtitle}>{isLogin ? 'Login' : 'Sign Up'}</Text>
@@ -176,14 +183,14 @@ const Login = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-            <Text style={styles.switchText}>
-              {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          <Text style={styles.switchText}>
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+          </Text>
+          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+            <Text style={styles.bottomtext}>
+              {isLogin ? 'signup' : 'login'}
             </Text>
-            <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-              <Text style={styles.bottomtext}>
-                {isLogin ? 'signup' : 'login'}
-              </Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
         <EmailVerificationModal
           visible={modalVisible}
@@ -270,7 +277,7 @@ const styles = StyleSheet.create({
     color: '#6200ee',
     marginTop: 10,
   },
-  bottomtext:{
+  bottomtext: {
     color: '#6200ee',
     marginTop: 10,
     textAlign: 'center',

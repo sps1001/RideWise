@@ -12,6 +12,7 @@ import InboxScreen from './components/InboxScreen';
 import GroupDetails from './components/GroupDetailsScreen';
 import OfferRideScreen from './components/OfferRideScreen';
 import RideHistory from './components/RideHistory';
+import UsernameScreen from './components/UsernameScreen';
 
 import { ThemeProvider } from './service/themeContext';
 import Settings from './components/settings';
@@ -30,6 +31,11 @@ export type RootStackParamList = {
   CarpoolScreen: undefined;
   Settings: undefined;
   OfferRideScreen: undefined;
+  InboxScreen: undefined;
+  RideHistory: undefined;
+  UsernameScreen : {
+    uid: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -81,10 +87,11 @@ const App = () => {
           <Stack.Screen name="CarpoolScreen" component={CarpoolScreen} />
           <Stack.Screen name="Settings" component={Settings} />
           <Stack.Screen name="GroupDetails" component={GroupDetails} />
+          <Stack.Screen name="UsernameScreen" component={UsernameScreen} />
           <Stack.Screen name="OfferRide" component={OfferRideScreen} />
           <Stack.Screen name="Inbox" component={InboxScreen} />
           <Stack.Screen name="RideHistory" component={RideHistory} />
-
+          <Stack.Screen name="GroupDetailsScreen" component={GroupDetailsScreen} />
 
         </Stack.Navigator>
       </NavigationContainer>

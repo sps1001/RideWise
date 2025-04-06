@@ -1,61 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { collection, getDocs, where, query } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
 
 const OfferRideScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { groupId } = route.params; // Get groupId from navigation params
-    const [activeUsers, setActiveUsers] = useState([]);
-    const [selectedUsers, setSelectedUsers] = useState({}); // Store selected users
+    const { groupId } = route.params || {}; // optional if groupId isn't used yet
+
+    const [users, setUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState({});
 
     useEffect(() => {
-        const fetchActiveUsers = async () => {
+        const fetchUsers = async () => {
             try {
-                console.log("Fetching active users...");
                 const usersRef = collection(db, 'users');
-                const activeUsersQuery = query(usersRef, where('isActive', '==', true));
-                const usersSnapshot = await getDocs(activeUsersQuery);
+                const snapshot = await getDocs(usersRef);
 
-                if (usersSnapshot.empty) {
-                    console.log("No active users found.");
-                }
+                const usersList = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
 
-                const usersList = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("Fetched users:", usersList);
-                setActiveUsers(usersList);
+                console.log('Fetched users:', usersList);
+                setUsers(usersList);
             } catch (error) {
-                console.error('Error fetching active users:', error);
+                console.error('Error fetching users:', error);
             }
         };
 
-
-        fetchActiveUsers();
+        fetchUsers();
     }, []);
 
     const toggleSelection = (userId) => {
         setSelectedUsers((prevSelected) => ({
             ...prevSelected,
-            [userId]: !prevSelected[userId], // Toggle selection
+            [userId]: !prevSelected[userId],
         }));
     };
 
     const handleConfirm = () => {
-        const selectedUserNames = activeUsers
+        const selectedUsernames = users
             .filter(user => selectedUsers[user.id])
-            .map(user => user.name);
+            .map(user => user.username);
 
-        if (selectedUserNames.length === 0) {
-            alert('No users selected. Please select at least one user.');
+        if (selectedUsernames.length === 0) {
+            Alert.alert('No Selection', 'Please select at least one user.');
             return;
         }
 
-        alert(`Ride offered to: ${selectedUserNames.join(', ')}`);
+        Alert.alert('Ride Offered', `Ride offered to: ${selectedUsernames.join(', ')}`);
 
-        // TODO: Send notifications via Firebase (implement Firestore update)
-        // sendRideOfferNotification(selectedUserNames, groupId);
+        // Optional: you can store this ride offer in Firestore if needed
 
         navigation.goBack();
     };
@@ -65,11 +62,14 @@ const OfferRideScreen = () => {
             <Text style={styles.heading}>Select Users to Offer Ride</Text>
 
             <FlatList
-                data={activeUsers}
+                data={users}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.userCard} onPress={() => toggleSelection(item.id)}>
-                        <Text style={styles.userName}>{item.name}</Text>
+                    <TouchableOpacity
+                        style={styles.userCard}
+                        onPress={() => toggleSelection(item.id)}
+                    >
+                        <Text style={styles.userName}>{item.username}</Text>
                         <Text style={selectedUsers[item.id] ? styles.selected : styles.notSelected}>
                             {selectedUsers[item.id] ? '✔ Selected' : 'Tap to Select'}
                         </Text>

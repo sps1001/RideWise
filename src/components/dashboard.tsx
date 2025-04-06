@@ -1,5 +1,5 @@
 
-import { View, Text, TouchableOpacity, StyleSheet,Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DashboardTemplate from './dashboardTemplate';
 
@@ -12,21 +12,21 @@ const Dashboard = () => {
       description: 'Find and book rides instantly.',
       icon: 'car',
       route: 'RideBooking',
-      source:require('../assets/download.jpg')
+      source: require('../assets/download.jpg')
     },
     {
       title: 'Carpooling',
       description: 'Share rides and save costs.',
       icon: 'account-group',
       route: 'CarpoolScreen',
-      source:require('../assets/download-1.jpg')
+      source: require('../assets/download-1.jpg')
     },
     {
       title: 'My Rides',
       description: 'View your upcoming and past rides.',
       icon: 'history',
       route: 'RideHistory',
-      source:require('../assets/images.jpg')
+      source: require('../assets/images.jpg')
     },
   ];
 
@@ -34,9 +34,9 @@ const Dashboard = () => {
     <DashboardTemplate>
       <View style={styles.container}>
         {cardData.map((card, index) => (
-          <TouchableOpacity 
-            key={index} 
-            style={styles.card} 
+          <TouchableOpacity
+            key={index}
+            style={styles.card}
             onPress={() => navigation.navigate(card.route as never)}
           >
             <Image source={card.source} style={{ width: 40, height: 40 }} />
