@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
+import { useTheme } from '../service/themeContext';
 
 const OfferRideScreen = () => {
+    const { isDarkMode } = useTheme();
     const navigation = useNavigation();
     const route = useRoute();
     const { groupId } = route.params || {}; // optional if groupId isn't used yet
@@ -58,18 +60,18 @@ const OfferRideScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.heading}>Select Users to Offer Ride</Text>
+        <View style={[styles.container, isDarkMode && styles.darkBackground]}>
+            <Text style={[styles.heading, isDarkMode && styles.darkText]}>Select Users to Offer Ride</Text>
 
             <FlatList
                 data={users}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <TouchableOpacity
-                        style={styles.userCard}
+                        style={[styles.userCard, isDarkMode && styles.darkCard]}
                         onPress={() => toggleSelection(item.id)}
                     >
-                        <Text style={styles.userName}>{item.username}</Text>
+                        <Text style={[styles.userName, isDarkMode && styles.darkText]}>{item.username}</Text>
                         <Text style={selectedUsers[item.id] ? styles.selected : styles.notSelected}>
                             {selectedUsers[item.id] ? '✔ Selected' : 'Tap to Select'}
                         </Text>
@@ -77,7 +79,10 @@ const OfferRideScreen = () => {
                 )}
             />
 
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+            <TouchableOpacity
+                style={[styles.confirmButton, isDarkMode && styles.darkButton]}
+                onPress={handleConfirm}
+            >
                 <Text style={styles.buttonText}>Confirm Ride Offer</Text>
             </TouchableOpacity>
         </View>
@@ -85,14 +90,61 @@ const OfferRideScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20 },
-    heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-    userCard: { backgroundColor: '#f8f9fa', padding: 15, borderRadius: 8, marginBottom: 10 },
-    userName: { fontSize: 18, fontWeight: 'bold' },
-    selected: { color: 'green', fontSize: 16, fontWeight: 'bold' },
-    notSelected: { color: 'gray', fontSize: 16 },
-    confirmButton: { backgroundColor: '#3b82f6', padding: 15, borderRadius: 8, marginTop: 20, alignItems: 'center' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: 'white',
+    },
+    darkBackground: {
+        backgroundColor: 'black',
+    },
+    heading: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: 'black',
+    },
+    darkText: {
+        color: 'white',
+    },
+    userCard: {
+        backgroundColor: '#f8f9fa',
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 10,
+    },
+    darkCard: {
+        backgroundColor: '#333',
+    },
+    userName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
+    },
+    selected: {
+        color: 'green',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    notSelected: {
+        color: 'gray',
+        fontSize: 16,
+    },
+    confirmButton: {
+        backgroundColor: '#3b82f6',
+        padding: 15,
+        borderRadius: 8,
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    darkButton: {
+        backgroundColor: '#555',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 });
 
 export default OfferRideScreen;

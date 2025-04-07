@@ -2,8 +2,10 @@ import  { useState } from 'react';
 import { View, Text, TouchableOpacity, Animated, StyleSheet, Pressable } from 'react-native';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { auth } from '../service/firebase';
+import { useTheme } from '../service/themeContext';
 
 const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
+  const {isDarkMode}=useTheme()
    const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -27,6 +29,8 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
       })
     );
   };
+
+  const styles=getStyles(isDarkMode);
 
   return (
     <View style={styles.container}> 
@@ -78,77 +82,82 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  sidebar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: '100%',
-    width: 250,
-    backgroundColor: 'white',
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 15,
-    zIndex: 1,
-  },
-  closeButton: {
-    marginBottom: 16,
-  },
-  icon: {
-    fontSize: 24,
-    color: 'black',
-  },
-  menuItem: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#3b82f6',
-  },
-  topBarText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  profileDropdown: {
-    position: 'absolute',
-    right: 16,
-    top: 64,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 15,
-    zIndex: 1,
-  },
-  profileText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  logoutText: {
-    fontSize: 16,
-    color: 'red',
-    marginTop: 8,
-  },
-  mainContent: {
-    flex: 1,
-    padding: 16,
-  },
-});
+const getStyles = (isDarkMode: boolean) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: isDarkMode ? '#121212' : '#f9f9f9',
+      flex: 1,
+    },
+    sidebar: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      height: '100%',
+      width: 250,
+      backgroundColor: isDarkMode ? '#1e1e1e' : 'white',
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 15,
+      zIndex: 1,
+    },
+    closeButton: {
+      marginBottom: 16,
+    },
+    icon: {
+      fontSize: 24,
+      color: isDarkMode ? '#f9fafb' : 'black',
+    },
+    menuItem: {
+      fontSize: 18,
+      fontWeight: '600',
+      marginBottom: 12,
+      color: isDarkMode ? '#e5e7eb' : '#1f2937',
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: isDarkMode ? '#2563eb' : '#3b82f6',
+    },
+    topBarText: {
+      color: 'white',
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    profileDropdown: {
+      position: 'absolute',
+      right: 16,
+      top: 64,
+      backgroundColor: isDarkMode ? '#2a2a2a' : 'white',
+      padding: 16,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 15,
+      zIndex: 1,
+    },
+    profileText: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: isDarkMode ? '#f3f4f6' : '#111827',
+    },
+    logoutText: {
+      fontSize: 16,
+      color: 'red',
+      marginTop: 8,
+    },
+    mainContent: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+    },
+  });
+
 
 export default DashboardTemplate;

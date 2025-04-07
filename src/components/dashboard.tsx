@@ -2,8 +2,10 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DashboardTemplate from './dashboardTemplate';
+import { useTheme } from '../service/themeContext';
 
 const Dashboard = () => {
+  const {isDarkMode}=useTheme();
   const navigation = useNavigation();
 
   const cardData = [
@@ -30,6 +32,8 @@ const Dashboard = () => {
     },
   ];
 
+  const styles=getStyles(isDarkMode)
+
   return (
     <DashboardTemplate>
       <View style={styles.container}>
@@ -50,15 +54,16 @@ const Dashboard = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (isDarkMode: boolean) =>
+  StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 20,
+    backgroundColor: isDarkMode ? '#121212' : '#f9f9f9',
   },
   card: {
     width: '100%',
-    backgroundColor: 'white',
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -70,6 +75,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 0,
     marginBottom: 16,
+    backgroundColor: isDarkMode ? '#1f1f1f' : '#f8f9fa',
   },
   cardTitle: {
     fontSize: 20,

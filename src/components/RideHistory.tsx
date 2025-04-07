@@ -1,8 +1,10 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
+import { useTheme } from '../service/themeContext';
 
 const RideHistory = () => {
+  const { isDarkMode } = useTheme();
   const navigation = useNavigation();
   const [rideData, setRideData] = useState([
     {
@@ -24,28 +26,53 @@ const RideHistory = () => {
   ]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Ride History</Text>
-      <FlatList
-        data={rideData}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.rideCard}>
-            <View style={styles.rideInfo}>
-              <Text style={styles.rideText}>{item.date} at {item.time}</Text>
-              <Text style={styles.rideText}>From: {item.from}</Text>
-              <Text style={styles.rideText}>To: {item.to}</Text>
-              <Text style={[styles.rideStatus, item.status === 'Completed' ? styles.completed : styles.upcoming]}>
-                {item.status}
-              </Text>
-            </View>
-          </View>
-        )}
-      />
+    <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
+      <Text style={[styles.header, { color: isDarkMode ? '#93c5fd' : '#3b82f6' }]}>Ride History</Text>
+
+      {rideData.length === 0 ? (
+        <Text style={[styles.emptyText, { color: isDarkMode ? '#e5e7eb' : '#374151' }]}>
+          No rides found.
+        </Text>
+      ) : (
+        <FlatList
+          data={rideData}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => {
+                // You can add navigation logic here later
+              }}
+              style={[
+                styles.rideCard,
+                { backgroundColor: isDarkMode ? '#374151' : '#ffffff' },
+              ]}
+            >
+              <View style={styles.rideInfo}>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  {item.date} at {item.time}
+                </Text>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  From: {item.from}
+                </Text>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  To: {item.to}
+                </Text>
+                <Text
+                  style={[
+                    styles.rideStatus,
+                    item.status === 'Completed' ? styles.completed : styles.upcoming,
+                  ]}
+                >
+                  {item.status}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
-}
-  
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -57,10 +84,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
-    color: '#3b82f6',
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 20,
   },
   rideCard: {
-    backgroundColor: 'white',
     padding: 16,
     borderRadius: 10,
     shadowColor: '#000',
@@ -75,7 +105,6 @@ const styles = StyleSheet.create({
   },
   rideText: {
     fontSize: 16,
-    color: '#374151',
   },
   rideStatus: {
     marginTop: 5,
@@ -89,4 +118,5 @@ const styles = StyleSheet.create({
     color: 'orange',
   },
 });
+
 export default RideHistory;

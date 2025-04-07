@@ -4,8 +4,10 @@ import { CommonActions } from '@react-navigation/native';
 import { doc, setDoc,updateDoc,collection,getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTheme } from '../service/themeContext';
 
 const UpdateProfile = () => {
+    const { isDarkMode } = useTheme();
     const [username, setUsername] = useState('');
     const navigation = useNavigation();
     const route = useRoute();
@@ -63,65 +65,66 @@ const UpdateProfile = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.heading}>Update Profile</Text>
-            <TextInput
-                placeholder="Enter username"
-                style={styles.input}
-                value={username}
-                onChangeText={setUsername}
-            />
-            <TouchableOpacity onPress={handleSaveUsername} style={styles.button}>
-                <Text style={styles.buttonText}>Update</Text>
-            </TouchableOpacity>
+        <View style={[styles.container, { backgroundColor: isDarkMode ? '#111827' : '#1e3c72' }]}>
+          <Text style={[styles.heading, { color: isDarkMode ? '#f9fafb' : '#fff' }]}>
+            Update Profile
+          </Text>
+          <TextInput
+            placeholder="Enter username"
+            placeholderTextColor={isDarkMode ? '#9ca3af' : '#666'}
+            style={[
+              styles.input,
+              {
+                backgroundColor: isDarkMode ? '#1f2937' : '#fff',
+                color: isDarkMode ? '#f3f4f6' : '#333',
+                borderColor: isDarkMode ? '#4b5563' : '#ccc',
+              },
+            ]}
+            value={username}
+            onChangeText={setUsername}
+          />
+          <TouchableOpacity onPress={handleSaveUsername} style={styles.button}>
+            <Text style={styles.buttonText}>Update</Text>
+          </TouchableOpacity>
         </View>
-    );
-};
-
-
-
-
-const styles = StyleSheet.create({
-    container: {
+      );
+    };
+    
+    const styles = StyleSheet.create({
+      container: {
         flex: 1,
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: '#1e3c72', // rich gradient bg
-    },
-    heading: {
+      },
+      heading: {
         fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 20,
-        color: '#fff',
         textAlign: 'center',
         textShadowColor: '#000',
         textShadowOffset: { width: 1, height: 2 },
         textShadowRadius: 4,
-    },
-    input: {
+      },
+      input: {
         borderWidth: 1,
         padding: 12,
         borderRadius: 12,
-        backgroundColor: '#fff',
         marginBottom: 20,
         fontSize: 16,
-        color: '#333',
-    },
-    button: {
+      },
+      button: {
         backgroundColor: '#ff6a00',
         padding: 15,
         borderRadius: 12,
         elevation: 6,
         shadowColor: '#000',
-    },
-    buttonText: {
+      },
+      buttonText: {
         color: '#fff',
         textAlign: 'center',
         fontWeight: 'bold',
         fontSize: 18,
-    },
-});
-
-
-
-export default UpdateProfile;
+      },
+    });
+    
+    export default UpdateProfile;

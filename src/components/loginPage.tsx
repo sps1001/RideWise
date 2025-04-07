@@ -1,5 +1,5 @@
 import { useState ,useEffect} from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid , Platform, Alert, Modal} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid , Platform, Alert, Modal, useColorScheme} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import { signUp,signIn } from '../service/auth';
 import { CommonActions } from '@react-navigation/native';
@@ -10,9 +10,11 @@ import { auth,db } from '../service/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc } from 'firebase/firestore';
 import { RootStackParamList } from '../App';
+import { useTheme } from '../service/themeContext';
 
 
 const Login = () => {
+  const {isDarkMode}=useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -138,6 +140,7 @@ const navigation = useNavigation<NavigationProp>();
     }
   };
 
+const styles = createStyles(isDarkMode);
 
   return (
     <LinearGradient colors={['lightblue', 'aquamarine']} style={styles.container}>
@@ -212,9 +215,10 @@ const navigation = useNavigation<NavigationProp>();
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: isDark ? '#121212' : 'transparent', // fallback if LinearGradient isn't used
   },
   scrollContainer: {
     flexGrow: 1,
@@ -225,10 +229,10 @@ const styles = StyleSheet.create({
   card: {
     width: '90%',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: isDark ? '#1e1e1e' : '#fff',
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: isDark ? '#000' : '#ccc',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
@@ -237,7 +241,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#192f6a',
+    color: isDark ? '#ffffff' : '#192f6a',
     marginBottom: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
@@ -247,17 +251,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: isDark ? '#fff' : '#333',
   },
   input: {
     width: '90%',
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: isDark ? '#333' : '#ddd',
     borderRadius: 25,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
-    shadowOffset: { width: 0, height: 1 },
+    backgroundColor: isDark ? '#2a2a2a' : '#f9f9f9',
+    color: isDark ? '#fff' : '#000',
   },
   buttonContainer: {
     width: '90%',
@@ -275,17 +279,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   switchText: {
-    color: '#6200ee',
+    color: '#1e90ff',
     marginTop: 10,
   },
   bottomtext: {
-    color: '#6200ee',
+    color: '#1e90ff',
     marginTop: 10,
     textAlign: 'center',
-    cursor: 'pointer',
-  }
-
+  },
 });
+
 
 const EmailVerificationModal = ({
   visible,
@@ -296,6 +299,7 @@ const EmailVerificationModal = ({
   onResend
 }) => {
 
+  const {isDarkMode}=useTheme();
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -309,8 +313,11 @@ const EmailVerificationModal = ({
         backgroundColor: 'rgba(0,0,0,0.4)'
       }}>
         <View style={{
-          width: '85%', backgroundColor: 'white', borderRadius: 15,
-          padding: 20, alignItems: 'center'
+          width: '85%',
+          backgroundColor: isDarkMode ? '#1e1e1e' : 'white',
+          borderRadius: 15,
+          padding: 20,
+          alignItems: 'center'
         }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
             Verify your email

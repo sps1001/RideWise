@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Fla
 import LocationPicker from '../service/locationPicker';
 import { useNavigation ,useFocusEffect,useRoute} from '@react-navigation/native';
 import { connectStorageEmulator } from 'firebase/storage';
+import { useTheme } from '../service/themeContext';
 
 const RideBooking = () => {
+  const { isDarkMode } = useTheme();
   const navigation=useNavigation();
   const route=useRoute();
   const [startLocation, setStartLocation] = useState('');
@@ -118,14 +120,14 @@ const RideBooking = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Book a Ride</Text>
+    <View style={[styles.container, isDarkMode && styles.darkBackground]}>
+      <Text style={[styles.header, isDarkMode && styles.darkText]}>Book a Ride</Text>
 
-      {/* Start Location Search */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, isDarkMode && styles.darkTextInput]}
           placeholder="Enter Start Location"
+          placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
           value={startLocation}
           onChangeText={(text) => {
             setStartLocation(text);
@@ -146,50 +148,46 @@ const RideBooking = () => {
       {showStartMapOption && (
         <TouchableOpacity
           style={styles.pickLocationButton}
-          onPress={() => navigation.navigate('LocationPicker',{
-            latitude:lat,
-            longitude:long,
-            which:'start',
-            onLocationSelect: (lat, long) => {
-              setLatitude(lat);
-              setLongitude(long);
-              getStartAddress();
-            },
-          })}
+          onPress={() =>
+            navigation.navigate('LocationPicker', {
+              latitude: lat,
+              longitude: long,
+              which: 'start',
+              onLocationSelect: async (lat, long) => {
+                setLatitude(lat);
+                setLongitude(long);
+                await getStartAddress();
+              },
+            })
+          }
         >
           <Text style={styles.buttonText}>📍 Mark Start Location on Map</Text>
         </TouchableOpacity>
       )}
 
-      {/* Start Location Suggestions */}
       {startSuggestions.length > 0 && (
-        <View>
-          <FlatList
-            data={startSuggestions}
-            keyExtractor={(item) => item.place_id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.suggestionItem}
-                onPress={() => {
-                  setStartLocation(item.description);
-                  setStartSuggestions([]);
-                }}
-              >
-                <Text>{item.description}</Text>
-              </TouchableOpacity>
-            )}
-          />
-
-          {/* Add this button */}
-          
-        </View>
+        <FlatList
+          data={startSuggestions}
+          keyExtractor={(item) => item.place_id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.suggestionItem, isDarkMode && styles.darkSuggestionItem]}
+              onPress={() => {
+                setStartLocation(item.description);
+                setStartSuggestions([]);
+              }}
+            >
+              <Text style={isDarkMode && styles.darkText}>{item.description}</Text>
+            </TouchableOpacity>
+          )}
+        />
       )}
 
-      {/* End Location Search */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, isDarkMode && styles.darkInputContainer]}>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, isDarkMode && styles.darkTextInput]}
           placeholder="Enter End Location"
+          placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
           value={endLocation}
           onChangeText={(text) => {
             setEndLocation(text);
@@ -203,49 +201,46 @@ const RideBooking = () => {
       {showEndMapOption && (
         <TouchableOpacity
           style={styles.pickLocationButton}
-          onPress={() => navigation.navigate('LocationPicker',{
-            latitude:lat,
-            longitude:long,
-            which:'end',
-            onLocationSelect: (lat, long) => {
-              setLatitude(lat);
-              setLongitude(long);
-              getEndAddress();
-            },
-          })}
+          onPress={() =>
+            navigation.navigate('LocationPicker', {
+              latitude: lat,
+              longitude: long,
+              which: 'end',
+              onLocationSelect: async (lat, long) => {
+                setLatitude(lat);
+                setLongitude(long);
+                await getEndAddress();
+              },
+            })
+          }
         >
           <Text style={styles.buttonText}>📍 Mark End Location on Map</Text>
         </TouchableOpacity>
       )}
 
-      {/* End Location Suggestions */}
       {endSuggestions.length > 0 && (
-        <View>
         <FlatList
           data={endSuggestions}
           keyExtractor={(item) => item.place_id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={styles.suggestionItem}
+              style={[styles.suggestionItem, isDarkMode && styles.darkSuggestionItem]}
               onPress={() => {
                 setEndLocation(item.description);
                 setEndSuggestions([]);
               }}
             >
-              <Text>{item.description}</Text>
+              <Text style={isDarkMode && styles.darkText}>{item.description}</Text>
             </TouchableOpacity>
           )}
         />
-
-        {/* Add this button */}
-        
-      </View>
       )}
 
-      {/* Book Ride Button */}
       <TouchableOpacity
         style={styles.bookButton}
-        onPress={() => Alert.alert('Ride Booked!', `From: ${startLocation}\nTo: ${endLocation}`)}
+        onPress={() =>
+          Alert.alert('Ride Booked!', `From: ${startLocation}\nTo: ${endLocation}`)
+        }
       >
         <Text style={styles.bookButtonText}>Book Ride</Text>
       </TouchableOpacity>
@@ -253,11 +248,16 @@ const RideBooking = () => {
   );
 };
 
+export default RideBooking;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: '#f3f4f6',
+  },
+  darkBackground: {
+    backgroundColor: '#000',
   },
   header: {
     fontSize: 24,
@@ -265,6 +265,9 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  darkText: {
+    color: '#fff',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -275,10 +278,17 @@ const styles = StyleSheet.create({
     elevation: 3,
     paddingHorizontal: 10,
   },
+  darkInputContainer: {
+    backgroundColor: '#1e1e1e',
+  },
   textInput: {
     flex: 1,
     fontSize: 16,
     padding: 10,
+    color: '#000',
+  },
+  darkTextInput: {
+    color: '#fff',
   },
   locationButton: {
     backgroundColor: '#3b82f6',
@@ -293,7 +303,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: 'center',
   },
-  
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -305,6 +314,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ddd',
     zIndex: 1,
     elevation: 2,
+  },
+  darkSuggestionItem: {
+    backgroundColor: '#1e1e1e',
   },
   bookButton: {
     backgroundColor: '#3b82f6',
@@ -319,5 +331,3 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
-
-export default RideBooking;
