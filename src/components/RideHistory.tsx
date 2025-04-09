@@ -22,156 +22,156 @@ const RideHistory = () => {
 
       const rides = [];
       querySnapshot.forEach((doc) => {
-        //         rides.push({ id: doc.id, ...doc.data() });
-        //       });
+        rides.push({ id: doc.id, ...doc.data() });
+      });
 
-        //       rides.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+      rides.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
 
-        //       setRideData(rides);
-        //     } catch (error) {
-        //       console.error('Error fetching ride history:', error);
-        //     } finally {
-        //       setLoading(false);
-        //     }
-        //   };
+      setRideData(rides);
+    } catch (error) {
+      console.error('Error fetching ride history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        //   // ✅ Move this inside the component
-        //   const markAsCompleted = async (rideId) => {
-        //     try {
-        //       const rideRef = doc(db, 'history', rideId);
-        //       await updateDoc(rideRef, { status: 'Completed' });
+  // ✅ Move this inside the component
+  const markAsCompleted = async (rideId) => {
+    try {
+      const rideRef = doc(db, 'history', rideId);
+      await updateDoc(rideRef, { status: 'Completed' });
 
-        //       setRideData((prevData) =>
-        //         prevData.map((ride) =>
-        //           ride.id === rideId ? { ...ride, status: 'Completed' } : ride
-        //         )
-        //       );
-        //     } catch (error) {
-        //       console.error('Error updating ride status:', error);
-        //     }
-        //   };
+      setRideData((prevData) =>
+        prevData.map((ride) =>
+          ride.id === rideId ? { ...ride, status: 'Completed' } : ride
+        )
+      );
+    } catch (error) {
+      console.error('Error updating ride status:', error);
+    }
+  };
 
-        //   useEffect(() => {
-        //     fetchRideHistory();
-        //   }, []);
-
-
-        //   return (
-        //     <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
-        //       <Text style={[styles.header, { color: isDarkMode ? '#93c5fd' : '#3b82f6' }]}>Ride History</Text>
-
-        //       {loading ? (
-        //         <ActivityIndicator size="large" color={isDarkMode ? '#60a5fa' : '#2563eb'} />
-        //       ) : rideData.length === 0 ? (
-        //         <Text style={[styles.emptyText, { color: isDarkMode ? '#e5e7eb' : '#374151' }]}>
-        //           No rides found.
-        //         </Text>
-        //       ) : (
-        //         <FlatList
-        //           data={rideData}
-        //           keyExtractor={(item) => item.id}
-        //           renderItem={({ item }) => (
-        //             <TouchableOpacity
-        //               onPress={() => { }}
-        //               style={[
-        //                 styles.rideCard,
-        //                 { backgroundColor: isDarkMode ? '#374151' : '#ffffff' },
-        //               ]}
-        //             >
-        //               <View style={styles.rideInfo}>
-        //                 <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
-        //                   {item.date} at {item.time}
-        //                 </Text>
-        //                 <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
-        //                   From: {item.from}
-        //                 </Text>
-        //                 <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
-        //                   To: {item.to}
-        //                 </Text>
-        //                 <Text
-        //                   style={[
-        //                     styles.rideStatus,
-        //                     item.status === 'Completed' ? styles.completed : styles.upcoming,
-        //                   ]}
-        //                 >
-        //                   {item.status}
-        //                 </Text>
-
-        //                 {item.status === 'Upcoming' && (
-        //                   <TouchableOpacity
-        //                     style={styles.completeButton}
-        //                     onPress={() => markAsCompleted(item.id)}
-        //                   >
-        //                     <Text style={styles.completeButtonText}>Mark as Completed</Text>
-        //                   </TouchableOpacity>
-        //                 )}
-        //               </View>
-        //             </TouchableOpacity>
-        //           )}
+  useEffect(() => {
+    fetchRideHistory();
+  }, []);
 
 
-        //         />
-        //       )}
-        //     </View>
-        //   );
-        // };
+  return (
+    <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
+      <Text style={[styles.header, { color: isDarkMode ? '#93c5fd' : '#3b82f6' }]}>Ride History</Text>
 
-        // const styles = StyleSheet.create({
-        //   container: {
-        //     flex: 1,
-        //     padding: 16,
-        //   },
-        //   header: {
-        //     fontSize: 24,
-        //     fontWeight: 'bold',
-        marginBottom: 16,
-          textAlign: 'center',
+      {loading ? (
+        <ActivityIndicator size="large" color={isDarkMode ? '#60a5fa' : '#2563eb'} />
+      ) : rideData.length === 0 ? (
+        <Text style={[styles.emptyText, { color: isDarkMode ? '#e5e7eb' : '#374151' }]}>
+          No rides found.
+        </Text>
+      ) : (
+        <FlatList
+          data={rideData}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => { }}
+              style={[
+                styles.rideCard,
+                { backgroundColor: isDarkMode ? '#374151' : '#ffffff' },
+              ]}
+            >
+              <View style={styles.rideInfo}>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  {item.date} at {item.time}
+                </Text>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  From: {item.from}
+                </Text>
+                <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                  To: {item.to}
+                </Text>
+                <Text
+                  style={[
+                    styles.rideStatus,
+                    item.status === 'Completed' ? styles.completed : styles.upcoming,
+                  ]}
+                >
+                  {item.status}
+                </Text>
+
+                {item.status === 'Upcoming' && (
+                  <TouchableOpacity
+                    style={styles.completeButton}
+                    onPress={() => markAsCompleted(item.id)}
+                  >
+                    <Text style={styles.completeButtonText}>Mark as Completed</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+
+
+        />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
   },
-        emptyText: {
-        textAlign: 'center',
-        fontSize: 16,
-        marginTop: 20,
-      },
-        completeButton: {
-        marginTop: 10,
-        backgroundColor: '#10b981',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 6,
-        alignSelf: 'flex-start',
-      },
-        completeButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-      },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 20,
+  },
+  completeButton: {
+    marginTop: 10,
+    backgroundColor: '#10b981',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  completeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 
-        rideCard: {
-        padding: 16,
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-        marginBottom: 10,
-      },
-        rideInfo: {
-        justifyContent: 'center',
-      },
-        rideText: {
-        fontSize: 16,
-      },
-        rideStatus: {
-        marginTop: 5,
-        fontSize: 14,
-        fontWeight: 'bold',
-      },
-        completed: {
-        color: 'green',
-      },
-        upcoming: {
-        color: 'orange',
-      },
+  rideCard: {
+    padding: 16,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 10,
+  },
+  rideInfo: {
+    justifyContent: 'center',
+  },
+  rideText: {
+    fontSize: 16,
+  },
+  rideStatus: {
+    marginTop: 5,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  completed: {
+    color: 'green',
+  },
+  upcoming: {
+    color: 'orange',
+  },
 });
 
-    export default RideHistory;
+export default RideHistory;
