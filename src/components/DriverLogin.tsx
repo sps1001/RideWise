@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../service/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { RootStackParamList } from '../../../NeerSE/src/App';
+import { RootStackParamList } from '../App';
 import { useTheme } from '../service/themeContext';
 
 const DriverLogin = () => {
