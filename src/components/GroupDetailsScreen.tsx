@@ -5,25 +5,23 @@ import { useTheme } from '../service/themeContext'; // Adjust path if needed
 
 const GroupDetailsScreen = () => {
   const route = useRoute();
-  const { groupId, groupName, members } = route.params as {
-    groupId: string;
-    groupName: string;
-    members: string[];
-  };
+  const { groupId, groupName = '', members = [] } = route.params || {};
 
   const { isDarkMode } = useTheme();
   const styles = getStyles(isDarkMode);
 
   const offerRide = () => {
     console.log(`Offering ride to members of ${groupName}`);
-    // Firebase logic to send notification to all members
+    // Optional: Add Firebase notification logic here
     // sendRideOfferNotification(members);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>{groupName}</Text>
-      <Text style={styles.memberListText}>Members: {members.join(', ')}</Text>
+      <Text style={styles.memberListText}>
+        Members: {members.length ? members.join(', ') : 'No members'}
+      </Text>
       <FlatList
         data={members}
         keyExtractor={(item) => item}

@@ -143,7 +143,7 @@ const RideBooking = () => {
   };
 
 
-  const addBooking = async () => {
+  const addBookingtohistory = async () => {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -154,6 +154,22 @@ const RideBooking = () => {
       from: startLocation,
       to: endLocation,
       status: 'Upcoming',
+    });
+
+    console.log("Booking added to Firestore"); // Add this
+  };
+
+  const addBookingtocarpool = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await addDoc(collection(db, 'carpool'), {
+      userId: user.uid,
+      date: date.toDateString(),
+      time: date.toLocaleTimeString(),
+      from: startLocation,
+      to: endLocation,
+      //status: 'Upcoming',
     });
 
     console.log("Booking added to Firestore"); // Add this
@@ -324,7 +340,8 @@ const RideBooking = () => {
         style={styles.bookButton}
         onPress={async () => {
           try {
-            await addBooking();
+            await addBookingtohistory();
+            await addBookingtocarpool();
             Alert.alert(
               'Ride Booked!',
               `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
@@ -341,8 +358,6 @@ const RideBooking = () => {
     </View >
   );
 };
-
-export default RideBooking;
 
 const styles = StyleSheet.create({
   container: {
@@ -425,3 +440,6 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
+
+
+export default RideBooking;
