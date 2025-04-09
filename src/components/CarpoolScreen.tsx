@@ -1,57 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
-
-const userGroups = [
-  { id: '1', groupName: 'IITJ to Paota', route: 'IITJ ➝ Paota', members: ['Harsh', 'Sahil'] },
-  { id: '2', groupName: 'Station to IITJ', route: 'Station ➝ IITJ', members: ['Rishi', 'Parth'] },
-];
 
 const CarpoolScreen = () => {
   const { isDarkMode } = useTheme();
   const navigation = useNavigation();
-  const [groups, setGroups] = useState(userGroups);
+  const [trips, setTrips] = useState([]);
   const [activeUsers, setActiveUsers] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const groupsRef = collection(db, 'carpoolGroups');
-        const groupsSnapshot = await getDocs(groupsRef);
-        const firebaseGroups = groupsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const carpoolRef = collection(db, 'carpool');
+    const unsubscribeTrips = onSnapshot(carpoolRef, (snapshot) => {
+      const tripsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTrips(tripsData);
+    });
 
-        setGroups([...userGroups, ...firebaseGroups]);
+    const usersRef = collection(db, 'users');
+    const activeUsersQuery = query(usersRef, where('isActive', '==', true));
+    const unsubscribeUsers = onSnapshot(activeUsersQuery, (snapshot) => {
+      const activeUsersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setActiveUsers(activeUsersList);
+    });
 
-        const usersRef = collection(db, 'users');
-        const activeUsersQuery = query(usersRef, where('isActive', '==', true));
-        const usersSnapshot = await getDocs(activeUsersQuery);
-        const activeUsersList = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        setActiveUsers(activeUsersList);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    return () => {
+      unsubscribeTrips();
+      unsubscribeUsers();
     };
-
-    fetchData();
   }, []);
 
-  const handleGroupClick = (groupId: string) => {
-    const group = groups.find(g => g.id === groupId);
-    if (group) {
+  const handleGroupClick = (tripId) => {
+    const trip = trips.find(t => t.id === tripId);
+    if (trip) {
       navigation.navigate('GroupDetails', {
-        groupId: group.id,
-        groupName: group.groupName,
-        members: group.members,
+        groupId: trip.id,
+        route: `${trip.from} ➝ ${trip.to}`,
+        date: trip.date,
+        time: trip.time,
       });
     }
   };
 
-  const handleOfferRide = (groupId: string) => {
-    navigation.navigate('OfferRide', { groupId });
+  const handleOfferRide = (tripId) => {
+    navigation.navigate('OfferRide', {
+      tripId,
+      users: activeUsers,
+    });
   };
 
   const handleInboxClick = () => {
@@ -62,15 +61,18 @@ const CarpoolScreen = () => {
 
   return (
     <View style={themeStyles.container}>
-      <Text style={themeStyles.heading}>Your Carpool Groups</Text>
+      <Text style={themeStyles.heading}>Available Carpool Trips</Text>
 
       <FlatList
-        data={groups}
+        data={trips}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={themeStyles.card}>
-            <Text style={themeStyles.driverName}>{item.groupName}</Text>
-            <Text style={themeStyles.text}>Route: {item.route}</Text>
+            <Text style={themeStyles.driverName}>
+              {item.from} ➝ {item.to}
+            </Text>
+            <Text style={themeStyles.text}>Date: {item.date}</Text>
+            <Text style={themeStyles.text}>Time: {item.time}</Text>
             <TouchableOpacity style={themeStyles.button} onPress={() => handleGroupClick(item.id)}>
               <Text style={themeStyles.buttonText}>View Members</Text>
             </TouchableOpacity>
@@ -78,7 +80,9 @@ const CarpoolScreen = () => {
               style={[themeStyles.button, themeStyles.offerButton]}
               onPress={() => handleOfferRide(item.id)}
             >
-              <Text style={themeStyles.buttonText}>Offer a Ride</Text>
+              <Text style={themeStyles.buttonText}>
+                Offer a Ride ({activeUsers.length} users online)
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -91,7 +95,7 @@ const CarpoolScreen = () => {
   );
 };
 
-const getStyles = (isDarkMode: boolean) =>
+const getStyles = (isDarkMode) =>
   StyleSheet.create({
     container: {
       flex: 1,
