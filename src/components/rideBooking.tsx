@@ -5,6 +5,8 @@ import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/nativ
 import { connectStorageEmulator } from 'firebase/storage';
 import { useTheme } from '../service/themeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { addDoc, collection } from 'firebase/firestore';
+import { auth, db } from '../service/firebase'; // adjust path as needed
 
 // const [date, setDate] = useState(new Date());
 // const [showDatePicker, setShowDatePicker] = useState(false);
@@ -138,6 +140,23 @@ const RideBooking = () => {
     } catch (error) {
       console.error('Error fetching location suggestions:', error);
     }
+  };
+
+
+  const addBooking = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await addDoc(collection(db, 'history'), {
+      userId: user.uid,
+      date: date.toDateString(),
+      time: date.toLocaleTimeString(),
+      from: startLocation,
+      to: endLocation,
+      status: 'Upcoming',
+    });
+
+    console.log("Booking added to Firestore"); // Add this
   };
 
   return (
@@ -303,16 +322,22 @@ const RideBooking = () => {
 
       <TouchableOpacity
         style={styles.bookButton}
-        onPress={() =>
-          Alert.alert(
-            'Ride Booked!',
-            `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
-          )
-
-        }
+        onPress={async () => {
+          try {
+            await addBooking();
+            Alert.alert(
+              'Ride Booked!',
+              `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
+            );
+          } catch (error) {
+            console.error('Error booking ride:', error);
+            Alert.alert('Error', 'Failed to book ride. Please try again.');
+          }
+        }}
       >
         <Text style={styles.bookButtonText}>Book Ride</Text>
       </TouchableOpacity>
+
     </View >
   );
 };

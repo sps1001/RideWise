@@ -1,35 +1,68 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../service/themeContext';
+import { db, auth } from '../service/firebase'; // adjust the import path if different
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { updateDoc, doc } from 'firebase/firestore';
 
 const RideHistory = () => {
   const { isDarkMode } = useTheme();
   const navigation = useNavigation();
-  const [rideData, setRideData] = useState([
-    {
-      id: '1',
-      date: 'April 1, 2025',
-      time: '9:00 AM',
-      from: 'karwar',
-      to: 'jodhpur Railway Station',
-      status: 'Completed',
-    },
-    {
-      id: '2',
-      date: 'April 3, 2025',
-      time: '4:30 PM',
-      from: 'paota',
-      to: 'ghantaghar, jodhpur',
-      status: 'Upcoming',
-    },
-  ]);
+  const [rideData, setRideData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRideHistory = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const q = query(collection(db, 'history'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+
+      const rides = [];
+      querySnapshot.forEach((doc) => {
+        rides.push({ id: doc.id, ...doc.data() });
+      });
+
+      rides.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+      setRideData(rides);
+    } catch (error) {
+      console.error('Error fetching ride history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Move this inside the component
+  const markAsCompleted = async (rideId) => {
+    try {
+      const rideRef = doc(db, 'history', rideId);
+      await updateDoc(rideRef, { status: 'Completed' });
+
+      setRideData((prevData) =>
+        prevData.map((ride) =>
+          ride.id === rideId ? { ...ride, status: 'Completed' } : ride
+        )
+      );
+    } catch (error) {
+      console.error('Error updating ride status:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRideHistory();
+  }, []);
+
 
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
       <Text style={[styles.header, { color: isDarkMode ? '#93c5fd' : '#3b82f6' }]}>Ride History</Text>
 
-      {rideData.length === 0 ? (
+      {loading ? (
+        <ActivityIndicator size="large" color={isDarkMode ? '#60a5fa' : '#2563eb'} />
+      ) : rideData.length === 0 ? (
         <Text style={[styles.emptyText, { color: isDarkMode ? '#e5e7eb' : '#374151' }]}>
           No rides found.
         </Text>
@@ -39,9 +72,7 @@ const RideHistory = () => {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => {
-                // You can add navigation logic here later
-              }}
+              onPress={() => { }}
               style={[
                 styles.rideCard,
                 { backgroundColor: isDarkMode ? '#374151' : '#ffffff' },
@@ -65,9 +96,20 @@ const RideHistory = () => {
                 >
                   {item.status}
                 </Text>
+
+                {item.status === 'Upcoming' && (
+                  <TouchableOpacity
+                    style={styles.completeButton}
+                    onPress={() => markAsCompleted(item.id)}
+                  >
+                    <Text style={styles.completeButtonText}>Mark as Completed</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </TouchableOpacity>
           )}
+
+
         />
       )}
     </View>
@@ -90,6 +132,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
   },
+  completeButton: {
+    marginTop: 10,
+    backgroundColor: '#10b981',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  completeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+
   rideCard: {
     padding: 16,
     borderRadius: 10,

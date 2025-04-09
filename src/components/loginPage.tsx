@@ -1,12 +1,12 @@
-import { useState ,useEffect} from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid , Platform, Alert, Modal, useColorScheme} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
-import { signUp,signIn } from '../service/auth';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid, Platform, Alert, Modal, useColorScheme } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { signUp, signIn } from '../service/auth';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendEmailVerification } from 'firebase/auth';
-import { useNavigation} from '@react-navigation/native';
-import { auth,db } from '../service/firebase';
+import { useNavigation } from '@react-navigation/native';
+import { auth, db } from '../service/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { doc, getDoc } from 'firebase/firestore';
 import { RootStackParamList } from '../App';
@@ -14,27 +14,27 @@ import { useTheme } from '../service/themeContext';
 
 
 const Login = () => {
-  const {isDarkMode}=useTheme();
+  const { isDarkMode } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [countdown, setCountdown] = useState(120);
+  const [countdown, setCountdown] = useState(20);
   const [signedUpEmail, setSignedUpEmail] = useState('');
 
   type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-  
+
     if (modalVisible && countdown > 0) {
       timer = setInterval(() => {
         setCountdown(prev => prev - 1);
       }, 1000);
     }
-  
+
     return () => {
       if (timer) clearInterval(timer);
     };
@@ -50,48 +50,48 @@ const navigation = useNavigation<NavigationProp>();
 
   const userVerification = async (rep) => {
     await sendEmailVerification(rep);
-          alert('Verification email sent! Please check your inbox.');
-      
-          setSignedUpEmail(email);
-          setModalVisible(true);
-      
-          // ⏳ Wait for verification
-          let verified = false;
-          let tries = 0;
-      
-          while (!verified && tries < 40) {
-            tries++;
-            await rep.reload();
-            verified = rep.emailVerified;
-      
-            if (verified) {
-              setModalVisible(false);
-              alert('Email verified successfully! Redirected to Dashboard.');
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Dashboard' }],
-                })
-              );
-              return;
-            }
-      
-            await new Promise((res) => setTimeout(res, 3000));
-          }
-      
-          if (!verified) {
-            showToast("Still not verified after 2 mins.");
-          }
+    alert('Verification email sent! Please check your inbox.');
+
+    setSignedUpEmail(email);
+    setModalVisible(true);
+
+    // ⏳ Wait for verification
+    let verified = false;
+    let tries = 0;
+
+    while (!verified && tries < 40) {
+      tries++;
+      await rep.reload();
+      verified = rep.emailVerified;
+
+      if (verified) {
+        setModalVisible(false);
+        alert('Email verified successfully! Redirected to Dashboard.');
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Dashboard' }],
+          })
+        );
+        return;
+      }
+
+      await new Promise((res) => setTimeout(res, 3000));
+    }
+
+    if (!verified) {
+      showToast("Still not verified after 2 mins.");
+    }
   }
 
   const handleAuthAction = async () => {
     if (isLogin) {
 
-      const resp=await signIn(email,password);
-      
-      if (resp) { 
+      const resp = await signIn(email, password);
+
+      if (resp) {
         console.log("Authenticated User:", resp);
-        const user= auth.currentUser;
+        const user = auth.currentUser;
         if (!user.emailVerified) {
           console.log("User not verified:", user);
           showToast('Please verify your email first before logging in.');
@@ -99,8 +99,8 @@ const navigation = useNavigation<NavigationProp>();
         }
 
         showToast('Logged in successfully! and user verfified');
-        const token=resp.accessToken;
-        const uid:string=resp.uid;
+        const token = resp.accessToken;
+        const uid: string = resp.uid;
         const { exp } = JSON.parse(atob(token.split('.')[1]));
         await AsyncStorage.setItem('authToken', token);
         await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry time
@@ -123,24 +123,24 @@ const navigation = useNavigation<NavigationProp>();
     } else {
       if (password === confirmPassword) {
         const rep = await signUp(email, password);
-      
+
         if (rep) {
           console.log("New User Created:", rep);
           showToast('Account created successfully!');
           userVerification(rep);
-      
+
         } else {
           showToast('Signup Failed: Something went wrong!');
         }
       } else {
         showToast('Signup Failed: Something went wrong!');
       }
-      
-      
+
+
     }
   };
 
-const styles = createStyles(isDarkMode);
+  const styles = createStyles(isDarkMode);
 
   return (
     <LinearGradient colors={['lightblue', 'aquamarine']} style={styles.container}>
@@ -209,7 +209,7 @@ const styles = createStyles(isDarkMode);
               userVerification(user);
             }
           }}
-/>
+        />
       </ScrollView>
     </LinearGradient>
   );
@@ -299,7 +299,7 @@ const EmailVerificationModal = ({
   onResend
 }) => {
 
-  const {isDarkMode}=useTheme();
+  const { isDarkMode } = useTheme();
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
