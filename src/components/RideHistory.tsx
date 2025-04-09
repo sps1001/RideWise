@@ -1,9 +1,9 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { useTheme } from '../service/themeContext';
 import { db, auth } from '../service/firebase';
-import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const RideHistory = () => {
   const { isDarkMode } = useTheme();
@@ -51,7 +51,7 @@ const RideHistory = () => {
         await deleteDoc(doc(db, 'carpool', docSnap.id));
       });
 
-      // Step 2: Update UI (mark status as completed in state)
+      // Step 2: Update rUI (mark status as completed in state)
       setRideData((prevData) =>
         prevData.map((ride) =>
           ride.id === rideId ? { ...ride, status: 'Completed' } : ride
@@ -59,6 +59,62 @@ const RideHistory = () => {
       );
     } catch (error) {
       console.error('Error marking ride as completed:', error);
+    }
+  };
+
+  // Add this function to allow users to cancel their accepted rides
+  const cancelRide = async (rideId, driverId) => {
+    try {
+      // Update in user history
+      await updateDoc(doc(db, 'history', rideId), {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledBy: 'user'
+      });
+      
+      // Find matching carpool entry to update
+      const carpoolQuery = query(
+        collection(db, 'carpool'),
+        where('userId', '==', auth.currentUser.uid),
+        where('driverId', '==', driverId)
+      );
+      
+      const carpoolSnapshot = await getDocs(carpoolQuery);
+      carpoolSnapshot.forEach(async (doc) => {
+        await updateDoc(doc.ref, {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancelledBy: 'user'
+        });
+      });
+      
+      // Update driver's history as well
+      const driverHistoryQuery = query(
+        collection(db, 'driverHistory'),
+        where('userId', '==', auth.currentUser.uid),
+        where('driverId', '==', driverId)
+      );
+      
+      const driverHistorySnapshot = await getDocs(driverHistoryQuery);
+      driverHistorySnapshot.forEach(async (doc) => {
+        await updateDoc(doc.ref, {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancelledBy: 'user'
+        });
+      });
+      
+      // Update UI
+      setRideData((prevData) =>
+        prevData.map((ride) =>
+          ride.id === rideId ? { ...ride, status: 'Cancelled' } : ride
+        )
+      );
+      
+      Alert.alert('Success', 'Ride cancelled successfully');
+    } catch (error) {
+      console.error('Error cancelling ride:', error);
+      Alert.alert('Error', 'Failed to cancel ride');
     }
   };
 
@@ -98,16 +154,34 @@ const RideHistory = () => {
                 <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
                   To: {item.to}
                 </Text>
+                
+                {item.driverName && (
+                  <Text style={[styles.rideText, { color: isDarkMode ? '#f9fafb' : '#374151' }]}>
+                    Driver: {item.driverName}
+                  </Text>
+                )}
+                
                 <Text
                   style={[
                     styles.rideStatus,
-                    item.status === 'Completed' ? styles.completed : styles.upcoming,
+                    item.status === 'Completed' ? styles.completed : 
+                    item.status === 'Cancelled' ? styles.cancelled :
+                    item.status === 'accepted' ? styles.accepted : styles.upcoming,
                   ]}
                 >
                   {item.status}
                 </Text>
 
-                {item.status !== 'Completed' && (
+                {item.status === 'accepted' && (
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => cancelRide(item.id, item.driverId)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel Ride</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {item.status !== 'Completed' && item.status !== 'accepted' && item.status !== 'Cancelled' && (
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() =>
@@ -154,6 +228,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  cancelButton: {
+    marginTop: 10,
+    backgroundColor: '#ef4444',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   rideCard: {
     padding: 16,
     borderRadius: 10,
@@ -177,6 +263,12 @@ const styles = StyleSheet.create({
   },
   completed: {
     color: 'green',
+  },
+  cancelled: {
+    color: '#ef4444',
+  },
+  accepted: {
+    color: '#3b82f6',
   },
   upcoming: {
     color: 'orange',

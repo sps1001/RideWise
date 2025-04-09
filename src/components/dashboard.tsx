@@ -1,12 +1,42 @@
-
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DashboardTemplate from './dashboardTemplate';
 import { useTheme } from '../service/themeContext';
+import { useEffect } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../service/firebase';
 
 const Dashboard = () => {
   const {isDarkMode}=useTheme();
   const navigation = useNavigation();
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    // Listen for rides that were recently accepted
+    const q = query(
+      collection(db, 'history'),
+      where('userId', '==', auth.currentUser.uid),
+      where('status', '==', 'accepted')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || 
+           (change.type === 'modified' && change.doc.data().status === 'accepted')) {
+          // Show notification for newly accepted ride
+          const ride = change.doc.data();
+          Alert.alert(
+            'Ride Accepted!',
+            `A driver has accepted your ride from ${ride.from} to ${ride.to}`,
+            [{ text: 'View Details', onPress: () => navigation.navigate('RideHistory') }]
+          );
+        }
+      });
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   const cardData = [
     {

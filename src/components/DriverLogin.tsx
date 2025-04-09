@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView, ToastAndroid, Platform, Alert, Modal, useColorScheme } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { signUp, signIn } from '../service/auth';
 import { CommonActions } from '@react-navigation/native';
@@ -8,12 +8,11 @@ import { sendEmailVerification } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../service/firebase';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { RootStackParamList } from '../../../NeerSE/src/App';
 import { useTheme } from '../service/themeContext';
 
-
-const Login = () => {
+const DriverLogin = () => {
   const { isDarkMode } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -40,17 +39,13 @@ const Login = () => {
     };
   }, [modalVisible, countdown]);
 
-  const showToast = (message: string) => {
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(message, ToastAndroid.SHORT);
-    } else {
-      Alert.alert('Notification', message);
-    }
+  const showAlert = (message: string) => {
+    Alert.alert('Notification', message);
   };
 
   const userVerification = async (rep) => {
     await sendEmailVerification(rep);
-    alert('Verification email sent! Please check your inbox.');
+    Alert.alert('Verification Sent', 'Verification email sent! Please check your inbox.');
 
     setSignedUpEmail(email);
     setModalVisible(true);
@@ -66,11 +61,11 @@ const Login = () => {
 
       if (verified) {
         setModalVisible(false);
-        alert('Email verified successfully! Redirected to Dashboard.');
+        Alert.alert('Success', 'Email verified successfully!');
         navigation.dispatch(
           CommonActions.reset({
             index: 0,
-            routes: [{ name: 'Dashboard' }],
+            routes: [{ name: 'DriverDashboard' }],
           })
         );
         return;
@@ -80,75 +75,85 @@ const Login = () => {
     }
 
     if (!verified) {
-      showToast("Still not verified after 2 mins.");
+      showAlert("Still not verified after 2 minutes.");
     }
   }
 
   const handleAuthAction = async () => {
     if (isLogin) {
-
       const resp = await signIn(email, password);
 
       if (resp) {
-        console.log("Authenticated User:", resp);
+        console.log("Authenticated Driver:", resp);
         const user = auth.currentUser;
+        
         if (!user.emailVerified) {
-          console.log("User not verified:", user);
-          showToast('Please verify your email first before logging in.');
+          console.log("Driver not verified:", user);
+          showAlert('Please verify your email first before logging in.');
           return;
         }
 
-        showToast('Logged in successfully! and user verfified');
-        const token = resp.accessToken;
-        const uid: string = resp.uid;
-        const { exp } = JSON.parse(atob(token.split('.')[1]));
-        await AsyncStorage.setItem('authToken', token);
-        await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry time
-        await AsyncStorage.setItem('uid', uid); // Save UID
-
-        const userDoc = await getDoc(doc(db, 'users', uid));
+        // Check if the user is registered as a driver
+        const userDoc = await getDoc(doc(db, 'drivers', user.uid));
+        
         if (!userDoc.exists()) {
-          navigation.navigate('UsernameScreen', { uid });
-        } else {
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Dashboard' }],
-            })
-          );
+          showAlert('This account is not registered as a driver.');
+          return;
         }
+
+        const token = resp.accessToken;
+        const uid = resp.uid;
+        const { exp } = JSON.parse(atob(token.split('.')[1]));
+        
+        await AsyncStorage.setItem('authToken', token);
+        await AsyncStorage.setItem('tokenExpiry', exp.toString());
+        await AsyncStorage.setItem('uid', uid);
+        await AsyncStorage.setItem('userType', 'driver');
+
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'DriverDashboard' }],
+          })
+        );
       } else {
-        showToast('Login Failed: Invalid email or password.');
+        showAlert('Login Failed: Invalid email or password.');
       }
     } else {
-      if (password === confirmPassword) {
-        const rep = await signUp(email, password);
-
-        if (rep) {
-          console.log("New User Created:", rep);
-          showToast('Account created successfully!');
-          userVerification(rep);
-
-        } else {
-          showToast('Signup Failed: Something went wrong!');
-        }
-      } else {
-        showToast('Signup Failed: Something went wrong!');
+      if (password !== confirmPassword) {
+        showAlert('Passwords do not match.');
+        return;
       }
+      
+      const rep = await signUp(email, password);
 
-
+      if (rep) {
+        console.log("New Driver Created:", rep);
+        showAlert('Account created successfully!');
+        
+        // Create a driver document
+        await setDoc(doc(db, 'drivers', rep.uid), {
+          email: email,
+          createdAt: new Date(),
+          isVerified: false,
+          status: 'pending',
+        });
+        
+        userVerification(rep);
+      } else {
+        showAlert('Signup Failed: Something went wrong!');
+      }
     }
   };
 
   const styles = createStyles(isDarkMode);
 
   return (
-    <LinearGradient colors={['lightblue', 'aquamarine']} style={styles.container}>
+    <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-
-        <Text style={styles.title}>RideWise</Text>
+        <Text style={styles.title}>RideWise Driver</Text>
         <View style={styles.card}>
-          <Text style={styles.subtitle}>{isLogin ? 'Login' : 'Sign Up'}</Text>
+          <Text style={styles.subtitle}>{isLogin ? 'Driver Login' : 'Driver Sign Up'}</Text>
 
           <TextInput
             placeholder="Email"
@@ -156,6 +161,8 @@ const Login = () => {
             style={styles.input}
             value={email}
             onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
 
           <TextInput
@@ -180,7 +187,7 @@ const Login = () => {
 
           <TouchableOpacity onPress={handleAuthAction} style={styles.buttonContainer}>
             <LinearGradient
-              colors={['#4c669f', '#3b5998', '#192f6a']}
+              colors={['#FF8008', '#FFA72F']}
               style={styles.button}
             >
               <Text style={styles.buttonText}>{isLogin ? 'Login' : 'Sign Up'}</Text>
@@ -188,14 +195,19 @@ const Login = () => {
           </TouchableOpacity>
 
           <Text style={styles.switchText}>
-            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            {isLogin ? "Don't have a driver account?" : 'Already have a driver account?'}
           </Text>
           <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
             <Text style={styles.bottomtext}>
-              {isLogin ? 'signup' : 'login'}
+              {isLogin ? 'Sign Up' : 'Login'}
             </Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>Go Back</Text>
+          </TouchableOpacity>
         </View>
+        
         <EmailVerificationModal
           visible={modalVisible}
           email={signedUpEmail}
@@ -209,6 +221,7 @@ const Login = () => {
               userVerification(user);
             }
           }}
+          isDarkMode={isDarkMode}
         />
       </ScrollView>
     </LinearGradient>
@@ -218,7 +231,6 @@ const Login = () => {
 const createStyles = (isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDark ? '#121212' : 'transparent', // fallback if LinearGradient isn't used
   },
   scrollContainer: {
     flexGrow: 1,
@@ -232,16 +244,16 @@ const createStyles = (isDark: boolean) => StyleSheet.create({
     backgroundColor: isDark ? '#1e1e1e' : '#fff',
     borderRadius: 15,
     alignItems: 'center',
-    shadowColor: isDark ? '#000' : '#ccc',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowRadius: 8,
     elevation: 5,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: isDark ? '#ffffff' : '#192f6a',
+    color: '#ffffff',
     marginBottom: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
@@ -255,17 +267,17 @@ const createStyles = (isDark: boolean) => StyleSheet.create({
   },
   input: {
     width: '90%',
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: isDark ? '#333' : '#ddd',
-    borderRadius: 25,
+    borderRadius: 8,
     marginBottom: 15,
     backgroundColor: isDark ? '#2a2a2a' : '#f9f9f9',
     color: isDark ? '#fff' : '#000',
   },
   buttonContainer: {
     width: '90%',
-    borderRadius: 25,
+    borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 15,
   },
@@ -279,16 +291,19 @@ const createStyles = (isDark: boolean) => StyleSheet.create({
     fontSize: 16,
   },
   switchText: {
-    color: '#1e90ff',
+    color: isDark ? '#90cdf4' : '#3b82f6',
     marginTop: 10,
   },
   bottomtext: {
-    color: '#1e90ff',
+    color: isDark ? '#90cdf4' : '#3b82f6',
     marginTop: 10,
-    textAlign: 'center',
+    fontWeight: 'bold',
   },
+  backText: {
+    color: '#888',
+    marginTop: 20,
+  }
 });
-
 
 const EmailVerificationModal = ({
   visible,
@@ -296,10 +311,9 @@ const EmailVerificationModal = ({
   countdown,
   setCountdown,
   onClose,
-  onResend
+  onResend,
+  isDarkMode
 }) => {
-
-  const { isDarkMode } = useTheme();
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -319,13 +333,26 @@ const EmailVerificationModal = ({
           padding: 20,
           alignItems: 'center'
         }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: 'bold', 
+            marginBottom: 10, 
+            color: isDarkMode ? '#fff' : '#000'
+          }}>
             Verify your email
           </Text>
-          <Text style={{ textAlign: 'center', marginBottom: 20 }}>
-            A verification email has been sent to{"\n"}<Text style={{ fontWeight: 'bold' }}>{email}</Text>
+          <Text style={{ 
+            textAlign: 'center', 
+            marginBottom: 20,
+            color: isDarkMode ? '#ccc' : '#333'
+          }}>
+            A verification email has been sent to{"\n"}
+            <Text style={{ fontWeight: 'bold' }}>{email}</Text>
           </Text>
-          <Text style={{ fontSize: 16, color: '#555' }}>
+          <Text style={{ 
+            fontSize: 16, 
+            color: isDarkMode ? '#aaa' : '#555' 
+          }}>
             Verify your email to proceed further ({formatTime(countdown)})
           </Text>
           {countdown === 0 && (
@@ -345,5 +372,4 @@ const EmailVerificationModal = ({
   );
 };
 
-
-export default Login;
+export default DriverLogin;
