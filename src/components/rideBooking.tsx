@@ -1,24 +1,33 @@
-import { useState ,useEffect} from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList, TextInput,Platform,PermissionsAndroid } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, FlatList, TextInput, Platform, PermissionsAndroid } from 'react-native';
 import LocationPicker from '../service/locationPicker';
-import { useNavigation ,useFocusEffect,useRoute} from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { connectStorageEmulator } from 'firebase/storage';
 import { useTheme } from '../service/themeContext';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+// const [date, setDate] = useState(new Date());
+// const [showDatePicker, setShowDatePicker] = useState(false);
+// const [showTimePicker, setShowTimePicker] = useState(false);
 
 const RideBooking = () => {
   const { isDarkMode } = useTheme();
-  const navigation=useNavigation();
-  const route=useRoute();
+  const navigation = useNavigation();
+  const route = useRoute();
   const [startLocation, setStartLocation] = useState('');
-  const [lat,setLatitude]=useState(26.4755);
-  const [long,setLongitude]=useState(73.1149);
+  const [lat, setLatitude] = useState(26.4755);
+  const [long, setLongitude] = useState(73.1149);
   const [endLocation, setEndLocation] = useState('');
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [startSuggestions, setStartSuggestions] = useState([]);
   const [endSuggestions, setEndSuggestions] = useState([]);
   const [showStartMapOption, setShowStartMapOption] = useState(false);
   const [showEndMapOption, setShowEndMapOption] = useState(false);
-  
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+
   const GOOGLE_MAPS_API_KEY = 'AIzaSyBGdExMD_KJEa-QVVZGM4bsLbVLfxFMGLA'; // Replace with your actual API key
 
 
@@ -46,7 +55,7 @@ const RideBooking = () => {
     }
   };
 
-  const getStartAddress = async()=>{
+  const getStartAddress = async () => {
     try {
       console.log('hello')
       console.log(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${long}&key=${GOOGLE_MAPS_API_KEY}`)
@@ -58,10 +67,10 @@ const RideBooking = () => {
       );
       const data = await response.json();
       console.log(data)
-      if(data.status=='OK'){
+      if (data.status == 'OK') {
         console.log('Current Location:', data);
         const address = data.results[0].formatted_address;
-        console.log('addr',address)
+        console.log('addr', address)
         setStartLocation(address);
         console.log(startLocation)
       }
@@ -69,7 +78,7 @@ const RideBooking = () => {
       console.error('Error fetching location:', error);
     }
   }
-  const getEndAddress = async()=>{
+  const getEndAddress = async () => {
     try {
       console.log(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${long}&key=${GOOGLE_MAPS_API_KEY}`)
       const response = await fetch(
@@ -80,17 +89,29 @@ const RideBooking = () => {
       );
       const data = await response.json();
       console.log(data)
-      if(data.status=='OK'){
+      if (data.status == 'OK') {
         console.log('Current Location:', data);
         const address = data.results[0].formatted_address;
         setEndLocation(address);
-        console.log('addr',address)
+        console.log('addr', address)
         console.log(endLocation)
       }
     } catch (error) {
       console.error('Error fetching location:', error);
     }
   }
+  const onDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShowDatePicker(false);
+    setDate(currentDate);
+  };
+
+  const onTimeChange = (event, selectedTime) => {
+    const currentTime = selectedTime || date;
+    setShowTimePicker(false);
+    setDate(currentTime); // Same state holds both date and time
+  };
+
 
   // Function to fetch location suggestions from API
   const fetchLocationSuggestions = async (query, setSuggestions) => {
@@ -144,6 +165,8 @@ const RideBooking = () => {
           )}
         </TouchableOpacity>
       </View>
+
+
 
       {showStartMapOption && (
         <TouchableOpacity
@@ -218,6 +241,8 @@ const RideBooking = () => {
         </TouchableOpacity>
       )}
 
+
+
       {endSuggestions.length > 0 && (
         <FlatList
           data={endSuggestions}
@@ -236,15 +261,59 @@ const RideBooking = () => {
         />
       )}
 
+      <View style={{ marginTop: 10 }}>
+        <Text style={[{ fontSize: 16, marginBottom: 5 }, isDarkMode && styles.darkText]}>
+          Selected Date: {date.toDateString()}
+        </Text>
+        <TouchableOpacity
+          style={styles.pickLocationButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.buttonText}>📅 Pick Date</Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+          />
+        )}
+
+        <Text style={[{ fontSize: 16, marginVertical: 5 }, isDarkMode && styles.darkText]}>
+          Selected Time: {date.toLocaleTimeString()}
+        </Text>
+        <TouchableOpacity
+          style={styles.pickLocationButton}
+          onPress={() => setShowTimePicker(true)}
+        >
+          <Text style={styles.buttonText}>⏰ Pick Time</Text>
+        </TouchableOpacity>
+
+        {showTimePicker && (
+          <DateTimePicker
+            value={date}
+            mode="time"
+            display="default"
+            onChange={onTimeChange}
+          />
+        )}
+      </View>
+
       <TouchableOpacity
         style={styles.bookButton}
         onPress={() =>
-          Alert.alert('Ride Booked!', `From: ${startLocation}\nTo: ${endLocation}`)
+          Alert.alert(
+            'Ride Booked!',
+            `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
+          )
+
         }
       >
         <Text style={styles.bookButtonText}>Book Ride</Text>
       </TouchableOpacity>
-    </View>
+    </View >
   );
 };
 
