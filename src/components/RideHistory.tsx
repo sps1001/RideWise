@@ -2,9 +2,8 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator }
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { useTheme } from '../service/themeContext';
-import { db, auth } from '../service/firebase'; // adjust the import path if different
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { updateDoc, doc } from 'firebase/firestore';
+import { db, auth } from '../service/firebase';
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 
 const RideHistory = () => {
   const { isDarkMode } = useTheme();
@@ -35,26 +34,37 @@ const RideHistory = () => {
     }
   };
 
-  // ✅ Move this inside the component
-  const markAsCompleted = async (rideId) => {
+  const markAsCompleted = async (rideId, from, to, date, time) => {
     try {
-      const rideRef = doc(db, 'history', rideId);
-      await updateDoc(rideRef, { status: 'Completed' });
+      // Step 1: Delete from 'carpool' collection
+      const carpoolQuery = query(
+        collection(db, 'carpool'),
+        where('userId', '==', auth.currentUser.uid),
+        where('from', '==', from),
+        where('to', '==', to),
+        where('date', '==', date),
+        where('time', '==', time)
+      );
 
+      const carpoolSnapshot = await getDocs(carpoolQuery);
+      carpoolSnapshot.forEach(async (docSnap) => {
+        await deleteDoc(doc(db, 'carpool', docSnap.id));
+      });
+
+      // Step 2: Update UI (mark status as completed in state)
       setRideData((prevData) =>
         prevData.map((ride) =>
           ride.id === rideId ? { ...ride, status: 'Completed' } : ride
         )
       );
     } catch (error) {
-      console.error('Error updating ride status:', error);
+      console.error('Error marking ride as completed:', error);
     }
   };
 
   useEffect(() => {
     fetchRideHistory();
   }, []);
-
 
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
@@ -97,10 +107,12 @@ const RideHistory = () => {
                   {item.status}
                 </Text>
 
-                {item.status === 'Upcoming' && (
+                {item.status !== 'Completed' && (
                   <TouchableOpacity
                     style={styles.completeButton}
-                    onPress={() => markAsCompleted(item.id)}
+                    onPress={() =>
+                      markAsCompleted(item.id, item.from, item.to, item.date, item.time)
+                    }
                   >
                     <Text style={styles.completeButtonText}>Mark as Completed</Text>
                   </TouchableOpacity>
@@ -108,8 +120,6 @@ const RideHistory = () => {
               </View>
             </TouchableOpacity>
           )}
-
-
         />
       )}
     </View>
@@ -144,7 +154,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-
   rideCard: {
     padding: 16,
     borderRadius: 10,
