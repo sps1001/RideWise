@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { getDatabase, ref, push, set ,get,update} from 'firebase/database';
 import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
+import * as Location from 'expo-location';
 
 const RideRequests = () => {
   const { isDarkMode } = useTheme();
@@ -26,36 +28,85 @@ const RideRequests = () => {
       setIsVerified(true);
       
       // Rest of the code to fetch ride requests
-      fetchRideRequests();
     };
     
     checkVerification();
+    fetchRideRequests();
   }, []);
+  
+  const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const toRad = (val) => (val * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
+  
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+  
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
   
   const fetchRideRequests = async () => {
     try {
       setLoading(true);
-      
-      // Fetch ride requests that have no assigned driver
-      const q = query(
-        collection(db, 'carpool'), 
-        where('status', '==', 'requested')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const requests = [];
-      
-      querySnapshot.forEach((doc) => {
-        requests.push({
-          id: doc.id,
-          ...doc.data()
+  
+      // Get driver's current location
+      console.log('Requesting location permissions...');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location permission denied');
+        console.error('Location permission denied');
+        return;
+      }
+      console.log('Fetching current location...');
+      const {
+        coords: { latitude: driverLat, longitude: driverLon },
+      } = await Location.getCurrentPositionAsync({});
+
+      console.log(`Driver's location: ${driverLat}, ${driverLon}`);
+  
+      const db = getDatabase();
+      const snapshot = await get(ref(db, 'rideRequests'));
+      console.log(snapshot.val()); 
+  
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const filtered = [];
+  
+        Object.entries(data).forEach(([key, value]) => {
+          if (
+            value.status === 'requested' &&
+            value.startLat &&
+            value.startLong
+          ) {
+            const distance = haversineDistance(
+              driverLat,
+              driverLon,
+              value.startLat,
+              value.startLong
+            );
+            console.log(`Distance to ${key}: ${distance} km`);
+  
+            if (distance <= 25) {
+              filtered.push({
+                id: key,
+                ...value,
+                distance: distance.toFixed(2)
+              });
+            }
+          }
         });
-      });
-      
-      setRideRequests(requests);
-    } catch (error) {
-      console.error('Error fetching ride requests:', error);
-      Alert.alert('Error', 'Could not load ride requests');
+        console.log(filtered);
+        setRideRequests(filtered);
+      } else {
+        setRideRequests([]);
+      }
+    } catch (err) {
+      console.error("Error fetching ride requests:", err);
+      Alert.alert("Failed", "Could not fetch ride requests");
     } finally {
       setLoading(false);
     }
@@ -138,112 +189,77 @@ const RideRequests = () => {
   
   const handleAcceptRide = async (rideId) => {
     if (!auth.currentUser) return;
-    
+  
     try {
       setProcessingId(rideId);
       
-      // Get the ride first to ensure it exists
-      const selectedRide = rideRequests.find(ride => ride.id === rideId);
-      if (!selectedRide) {
-        throw new Error('Ride not found');
+      const dbRT = getDatabase();
+      const rideRef = ref(dbRT, `rideRequests/${rideId}`);
+      const rideSnap = await get(rideRef);
+  
+      if (!rideSnap.exists()) {
+        throw new Error("Ride not found");
       }
-      
-      // Get driver name
+  
+      const rideData = rideSnap.val();
       const driverName = auth.currentUser.displayName || 'Driver';
       const timestamp = new Date();
-      
-      // First update the carpool document with just the status (simplest operation)
-      console.log(`Updating carpool document: ${rideId}`);
-      const carpoolRef = doc(db, 'carpool', rideId);
-      await updateDoc(carpoolRef, {
-        // Changed from 'accepted' to 'active'
-        status: 'active'
-      });
-      
-      // Now that status is changed, update the rest of the fields
-      console.log("Updating driver details");
-      await updateDoc(carpoolRef, {
+  
+      // ✅ Update ride request in Realtime DB
+      await update(rideRef, {
+        status: 'active',
         driverId: auth.currentUser.uid,
         driverName: driverName,
-        acceptedAt: timestamp
+        acceptedAt: timestamp.toISOString()
       });
-      
-      // Create driver history document - without self-referential IDs
-      console.log("Creating history records");
-      await addDoc(collection(db, 'driverHistory'), {
-        driverId: auth.currentUser.uid,
-        rideId: rideId,
-        userId: selectedRide.userId,
-        userName: selectedRide.userName || 'User',
-        from: selectedRide.from,
-        to: selectedRide.to,
-        date: selectedRide.date,
-        time: selectedRide.time,
-        // Changed from 'accepted' to 'active'
-        status: 'active',
-        acceptedAt: timestamp
-      });
-      
-      // Create user history document - without self-referential IDs
+  
+  
       await addDoc(collection(db, 'history'), {
-        userId: selectedRide.userId,
+        userId: rideData.userId,
         rideId: rideId,
         driverId: auth.currentUser.uid,
         driverName: driverName,
-        from: selectedRide.from,
-        to: selectedRide.to,
-        date: selectedRide.date,
-        time: selectedRide.time,
-        // Changed from 'accepted' to 'active'
+        from: rideData.from,
+        to: rideData.to,
+        date: rideData.date,
+        time: rideData.time,
         status: 'active',
         acceptedAt: timestamp
       });
-      
-      // Update UI
+  
+      // ✅ Update UI
       setRideRequests(prev => prev.filter(ride => ride.id !== rideId));
-      
       Alert.alert('Success', 'Ride accepted successfully!');
     } catch (error) {
       console.error('Error accepting ride:', error);
-      
-      // More detailed error for debugging
-      if (error.code) {
-        console.error(`Firebase error code: ${error.code}`);
-      }
-      
       Alert.alert('Error', `Failed to accept ride: ${error.message}`);
     } finally {
       setProcessingId(null);
     }
   };
-  
+
   const handleRejectRide = async (rideId) => {
+    if (!auth.currentUser) return;
+  
     try {
       setProcessingId(rideId);
-      
-      // Get the ride details first
-      const selectedRide = rideRequests.find(ride => ride.id === rideId);
-      if (!selectedRide) {
-        throw new Error('Ride not found');
+  
+      const dbRT = getDatabase();
+      const rideRef = ref(dbRT, `rideRequests/${rideId}`);
+      const rideSnap = await get(rideRef);
+  
+      if (!rideSnap.exists()) {
+        throw new Error("Ride not found");
       }
-      
-      // Use batch operation to ensure atomic updates (prevents permission errors)
-      const batch = writeBatch(db);
-      
-      // Update ride status to rejected in Firestore
-      const carpoolRef = doc(db, 'carpool', rideId);
-      batch.update(carpoolRef, {
+  
+      await update(rideRef, {
         status: 'rejected',
         rejectedBy: auth.currentUser.uid,
-        rejectedAt: new Date()
+        rejectedAt: new Date().toISOString()
       });
-      
-      // Commit the batch
-      await batch.commit();
-      
-      // Update UI
+  
+      // ✅ Update UI
       setRideRequests(prev => prev.filter(ride => ride.id !== rideId));
-      
       Alert.alert('Success', 'Ride request rejected');
     } catch (error) {
       console.error('Error rejecting ride:', error);
@@ -323,7 +339,7 @@ const RideRequests = () => {
               </View>
               
               {/* Only show action buttons for non-rejected rides */}
-              {item.status !== 'rejected' && (
+              {item.status !== 'Completed' && (
                 <View style={styles.buttonRow}>
                   <TouchableOpacity 
                     style={styles.acceptButton}

@@ -28,7 +28,7 @@ const DriverRideHistory = () => {
       
       // Query driver's ride history
       const q = query(
-        collection(db, 'driverHistory'),
+        collection(db, 'history'),
         where('driverId', '==', auth.currentUser.uid)
       );
       

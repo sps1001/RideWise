@@ -10,6 +10,7 @@ const firebaseConfig = {
   storageBucket: "ridewise-e2fb6.appspot.com",
   messagingSenderId: "47109715495",
   appId: "1:47109715495:android:bf2f72d6e2d94fd6578002",
+  databaseURL: "https://ridewise-e2fb6-default-rtdb.asia-southeast1.firebasedatabase.app", // ✅ important
 };
 
 // Initialize Firebase only if not already initialized (prevents duplicate errors)

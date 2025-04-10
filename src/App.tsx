@@ -24,6 +24,7 @@ import { ThemeProvider } from './service/themeContext';
 import Settings from './components/settings';
 import GroupDetailsScreen from './components/GroupDetailsScreen';
 import ResetPassword from './components/ResetPassword';
+import RideWaiting from './components/rideWaiting';
 
 export type RootStackParamList = {
   LandingPage: undefined;
@@ -54,6 +55,11 @@ export type RootStackParamList = {
     uid: string;
   };
   ResetPassword: undefined;
+  RideWaiting:{
+    origin: { latitude: number; longitude: number };
+    destination: { latitude: number; longitude: number };
+    realtimeId: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -127,6 +133,7 @@ const App = () => {
           <Stack.Screen name="GroupDetailsScreen" component={GroupDetailsScreen} />
           <Stack.Screen name="UpdateProfile" component={UpdateProfile} />
           <Stack.Screen name="ResetPassword" component={ResetPassword} />
+          <Stack.Screen name="RideWaiting" component={RideWaiting} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>

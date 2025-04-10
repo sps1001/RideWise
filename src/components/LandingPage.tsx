@@ -17,9 +17,9 @@ const LandingPage = () => {
       const userType = await AsyncStorage.getItem('userType');
       
       // If you want to auto-redirect authenticated users
-      // if (token) {
-      //   navigation.navigate(userType === 'driver' ? 'DriverDashboard' : 'Dashboard');
-      // }
+      if (token) {
+        navigation.navigate(userType === 'driver' ? 'DriverDashboard' : 'Dashboard');
+      }
     };
     
     checkAuth();

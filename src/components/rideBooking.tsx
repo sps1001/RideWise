@@ -6,6 +6,7 @@ import { connectStorageEmulator } from 'firebase/storage';
 import { useTheme } from '../service/themeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { addDoc, collection } from 'firebase/firestore';
+import { getDatabase, ref, push, set } from "firebase/database";
 import { auth, db } from '../service/firebase'; // adjust path as needed
 
 // const [date, setDate] = useState(new Date());
@@ -17,6 +18,10 @@ const RideBooking = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const [startLocation, setStartLocation] = useState('');
+  const [startLat,setStartLat] = useState(26.4755);
+  const [startLong,setStartLong] = useState(73.1149);
+  const [endLat,setEndLat] = useState(26.4690);
+  const [endLong,setEndLong] = useState(73.1259);
   const [lat, setLatitude] = useState(26.4755);
   const [long, setLongitude] = useState(73.1149);
   const [endLocation, setEndLocation] = useState('');
@@ -28,6 +33,9 @@ const RideBooking = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isSelectingStartSuggestion, setIsSelectingStartSuggestion] = useState(false);
+  const [isSelectingEndSuggestion, setIsSelectingEndSuggestion] = useState(false);  
+  const [requestId, setRequestId] = useState(""); // State to hold the request ID
 
 
   const GOOGLE_MAPS_API_KEY = 'AIzaSyBGdExMD_KJEa-QVVZGM4bsLbVLfxFMGLA'; // Replace with your actual API key
@@ -59,7 +67,7 @@ const RideBooking = () => {
 
   const getStartAddress = async () => {
     try {
-      console.log('hello')
+      console.log(lat,long)
       console.log(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${long}&key=${GOOGLE_MAPS_API_KEY}`)
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${long}&key=${GOOGLE_MAPS_API_KEY}`,
@@ -68,12 +76,11 @@ const RideBooking = () => {
         }
       );
       const data = await response.json();
-      console.log(data)
       if (data.status == 'OK') {
-        console.log('Current Location:', data);
         const address = data.results[0].formatted_address;
-        console.log('addr', address)
         setStartLocation(address);
+        setStartLat(lat);
+        setStartLong(long);
         console.log(startLocation)
       }
     } catch (error) {
@@ -95,6 +102,8 @@ const RideBooking = () => {
         console.log('Current Location:', data);
         const address = data.results[0].formatted_address;
         setEndLocation(address);
+        setEndLat(lat);
+        setEndLong(long);
         console.log('addr', address)
         console.log(endLocation)
       }
@@ -132,7 +141,6 @@ const RideBooking = () => {
         }));
 
         setSuggestions(predictions);
-        console.log('Location suggestions:', predictions); // Prints predictions in console
       } else {
         console.error('Error fetching location suggestions:', data.status);
         setSuggestions([]);
@@ -141,6 +149,59 @@ const RideBooking = () => {
       console.error('Error fetching location suggestions:', error);
     }
   };
+
+  const getCoordinatesFromAddress = async (address) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+  
+      if (data.status === 'OK') {
+        const { lat, lng } = data.results[0].geometry.location;
+        return { lat, lng };
+      } else {
+        console.warn('Geocode failed:', data.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Geocode error:', error);
+      return null;
+    }
+  };
+
+  const handleStartAddressChange = async (text) => {
+    setStartLocation(text);
+  
+    if (!isSelectingStartSuggestion) {
+      fetchLocationSuggestions(text, setStartSuggestions);
+    }
+  
+    const coords = await getCoordinatesFromAddress(text);
+    if (coords) {
+      setStartLat(coords.lat);
+      setStartLong(coords.lng);
+    }
+  
+    setIsSelectingStartSuggestion(false); // reset
+  };
+  
+  const handleEndAddressChange = async (text) => {
+    setEndLocation(text);
+  
+    if (!isSelectingEndSuggestion) {
+      fetchLocationSuggestions(text, setEndSuggestions);
+    }
+  
+    const coords = await getCoordinatesFromAddress(text);
+    if (coords) {
+      setEndLat(coords.lat);
+      setEndLong(coords.lng);
+    }
+  
+    setIsSelectingEndSuggestion(false);
+  };
+  
 
 
   const addBookingtohistory = async () => {
@@ -154,6 +215,7 @@ const RideBooking = () => {
       from: startLocation,
       to: endLocation,
       status: 'Upcoming',
+      driverId:'',
     });
 
     console.log("Booking added to Firestore"); // Add this
@@ -177,6 +239,41 @@ const RideBooking = () => {
     console.log("Booking added to Firestore");
   };
 
+  const addRideRequestToRealtimeDB = async () => {
+    console.log('Adding ride request to Realtime DB');
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('No user logged in');
+      return;
+    }
+    
+    const db = getDatabase(); // get Realtime DB instance
+    const rideRequestRef = ref(db, 'rideRequests');
+    const newRequestRef = push(rideRequestRef); // generate unique ID
+  
+    const payload = {
+      userId: user.uid,
+      userName: user.displayName || 'Anonymous',
+      from: startLocation,
+      to: endLocation,
+      startLat,
+      startLong,
+      endLat,
+      endLong,
+      date: date.toDateString(),
+      time: date.toLocaleTimeString(),
+      requestedAt: Date.now(),
+      status: 'requested'
+    };
+  
+    await set(newRequestRef, payload);
+    const reqId = newRequestRef.key;
+    console.log('Ride request ID:', reqId);
+    setRequestId(reqId); // Store the request ID in state
+    console.log('Ride request pushed to Realtime DB');
+    return reqId;
+  };
+
   return (
     <View style={[styles.container, isDarkMode && styles.darkBackground]}>
       <Text style={[styles.header, isDarkMode && styles.darkText]}>Book a Ride</Text>
@@ -188,8 +285,7 @@ const RideBooking = () => {
           placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
           value={startLocation}
           onChangeText={(text) => {
-            setStartLocation(text);
-            fetchLocationSuggestions(text, setStartSuggestions);
+            handleStartAddressChange(text);
           }}
           onFocus={() => setShowStartMapOption(true)}
           onBlur={() => setShowStartMapOption(false)}
@@ -232,8 +328,10 @@ const RideBooking = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.suggestionItem, isDarkMode && styles.darkSuggestionItem]}
-              onPress={() => {
+              onPress={async () => {
+                setIsSelectingStartSuggestion(true);
                 setStartLocation(item.description);
+                await handleStartAddressChange(item.description);
                 setStartSuggestions([]);
               }}
             >
@@ -250,8 +348,7 @@ const RideBooking = () => {
           placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
           value={endLocation}
           onChangeText={(text) => {
-            setEndLocation(text);
-            fetchLocationSuggestions(text, setEndSuggestions);
+            handleEndAddressChange(text);
           }}
           onFocus={() => setShowEndMapOption(true)}
           onBlur={() => setShowEndMapOption(false)}
@@ -287,8 +384,10 @@ const RideBooking = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.suggestionItem, isDarkMode && styles.darkSuggestionItem]}
-              onPress={() => {
+              onPress={async() => {
+                setIsSelectingEndSuggestion(true);
                 setEndLocation(item.description);
+                await handleEndAddressChange(item.description);
                 setEndSuggestions([]);
               }}
             >
@@ -342,12 +441,22 @@ const RideBooking = () => {
         style={styles.bookButton}
         onPress={async () => {
           try {
+            console.log('inside book button')
             await addBookingtohistory();
             await addBookingtocarpool();
+            const req= await addRideRequestToRealtimeDB();
             Alert.alert(
               'Ride Booked!',
               `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
-            );
+              );
+              console.log('startLat', startLat,'startLog', startLong)
+              console.log('endLat', endLat,'endLog', endLong)
+              console.log('requestId', req) 
+              navigation.navigate('RideWaiting', {
+                origin: { latitude: startLat, longitude: startLong }, 
+                destination: { latitude: endLat, longitude: endLong}, 
+                realtimeId: requestId,
+              });
           } catch (error) {
             console.error('Error booking ride:', error);
             Alert.alert('Error', 'Failed to book ride. Please try again.');
