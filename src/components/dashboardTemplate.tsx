@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,12 +10,15 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CommonActions, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
 import { auth } from "../service/firebase";
 import { useTheme } from "../service/themeContext";
 
 const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDarkMode } = useTheme();
-  const navigation = useNavigation();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const slideAnim = new Animated.Value(menuOpen ? 0 : -250);
@@ -76,11 +79,12 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
           <Text style={styles.icon}>&#x2715;</Text>
         </Pressable>
         <TouchableOpacity
-          onPress={() => {
+          onPress={async () => {
+            const userType = await AsyncStorage.getItem('userType');
             navigation.dispatch(
               CommonActions.reset({
                 index: 0,
-                routes: [{ name: "Dashboard" }],
+                routes: [{ name: userType === 'driver' ? 'DriverDashboard' : 'Dashboard' }],
               })
             );
           }}
