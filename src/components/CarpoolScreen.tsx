@@ -5,11 +5,26 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 
+interface Trip {
+  id: string;
+  from: string;
+  to: string;
+  date: string;
+  time: string;
+  [key: string]: any; // For any additional properties
+}
+
+interface User {
+  id: string;
+  isActive: boolean;
+  [key: string]: any; // For any additional properties
+}
+
 const CarpoolScreen = () => {
   const { isDarkMode } = useTheme();
   const navigation = useNavigation();
-  const [trips, setTrips] = useState([]);
-  const [activeUsers, setActiveUsers] = useState([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [activeUsers, setActiveUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const carpoolRef = collection(db, 'carpool');
@@ -17,14 +32,17 @@ const CarpoolScreen = () => {
       const tripsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-      }));
+      })) as Trip[];
       setTrips(tripsData);
     });
 
     const usersRef = collection(db, 'users');
     const activeUsersQuery = query(usersRef, where('isActive', '==', true));
     const unsubscribeUsers = onSnapshot(activeUsersQuery, (snapshot) => {
-      const activeUsersList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const activeUsersList = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      })) as User[];
       setActiveUsers(activeUsersList);
     });
 
@@ -34,15 +52,15 @@ const CarpoolScreen = () => {
     };
   }, []);
 
-  const handleGroupClick = (tripId) => {
+  const handleGroupClick = (tripId: string) => {
     const trip = trips.find(t => t.id === tripId);
     if (trip) {
-      navigation.navigate('GroupDetails', {
+      navigation.navigate('GroupDetails' as never, {
         groupId: trip.id,
         route: `${trip.from} ➝ ${trip.to}`,
         date: trip.date,
         time: trip.time,
-      });
+      } as never);
     }
   };
 

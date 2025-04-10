@@ -165,14 +165,16 @@ const RideBooking = () => {
 
     await addDoc(collection(db, 'carpool'), {
       userId: user.uid,
+      userName: user.displayName || 'Anonymous User', // Add user name for drivers to see
       date: date.toDateString(),
       time: date.toLocaleTimeString(),
       from: startLocation,
       to: endLocation,
-      //status: 'Upcoming',
+      status: 'requested', // CRITICAL: This status is what drivers look for
+      requestedAt: new Date()
     });
 
-    console.log("Booking added to Firestore"); // Add this
+    console.log("Booking added to Firestore");
   };
 
   return (

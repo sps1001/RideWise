@@ -1,12 +1,21 @@
-import  { useState } from 'react';
-import { View, Text, TouchableOpacity, Animated, StyleSheet, Pressable } from 'react-native';
-import { CommonActions, useNavigation } from '@react-navigation/native';
-import { auth } from '../service/firebase';
-import { useTheme } from '../service/themeContext';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  StyleSheet,
+  Pressable,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import { auth } from "../service/firebase";
+import { useTheme } from "../service/themeContext";
 
 const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
-  const {isDarkMode}=useTheme()
-   const navigation = useNavigation();
+  const { isDarkMode } = useTheme();
+  const navigation = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const slideAnim = new Animated.Value(menuOpen ? 0 : -250);
@@ -20,43 +29,76 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
     }).start();
   };
 
+  // const handleLogout = async () => {
+  //   await auth.signOut(); // Sign out user
+  //   navigation.dispatch(
+  //     CommonActions.reset({
+  //       index: 0,
+  //       routes: [{ name: 'Login' }], // Navigate back to Login screen
+  //     })
+  //   );
+  // };
+
+  // Add this function to your settings component or dashboard components
   const handleLogout = async () => {
-    await auth.signOut(); // Sign out user
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'Login' }], // Navigate back to Login screen
-      })
-    );
+    try {
+      // Clear auth token and other stored data
+      await AsyncStorage.removeItem("authToken");
+      await AsyncStorage.removeItem("tokenExpiry");
+      await AsyncStorage.removeItem("uid");
+      await AsyncStorage.removeItem("userType");
+
+      // Sign out from Firebase
+      await auth.signOut();
+
+      // Navigate to landing page and reset navigation stack
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "LandingPage" }],
+        })
+      );
+    } catch (error) {
+      console.error("Error during logout:", error);
+      Alert.alert("Error", "Failed to log out completely.");
+    }
   };
 
-  const styles=getStyles(isDarkMode);
+  const styles = getStyles(isDarkMode);
 
   return (
-    <View style={styles.container}> 
+    <View style={styles.container}>
       {/* Sidebar */}
-      <Animated.View style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
+      <Animated.View
+        style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}
+      >
         <Pressable onPress={toggleMenu} style={styles.closeButton}>
           <Text style={styles.icon}>&#x2715;</Text>
         </Pressable>
-        <TouchableOpacity onPress={() => {
-          navigation.dispatch(
-            CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'Dashboard' }],
-          })
-          );
-        }}>
-        <Text style={styles.menuItem} >Dashboard</Text>
+        <TouchableOpacity
+          onPress={() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "Dashboard" }],
+              })
+            );
+          }}
+        >
+          <Text style={styles.menuItem}>Dashboard</Text>
         </TouchableOpacity>
         <Text style={styles.menuItem}>Analytics</Text>
-        <TouchableOpacity onPress={() => {navigation.navigate('Settings')}}>
-        <Text style={styles.menuItem}>Settings</Text>
-        </TouchableOpacity> 
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate("Settings");
+          }}
+        >
+          <Text style={styles.menuItem}>Settings</Text>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* Top Bar */}
-      <View style={styles.topBar}> 
+      <View style={styles.topBar}>
         <Pressable onPress={toggleMenu}>
           <Text style={styles.icon}>&#9776;</Text>
         </Pressable>
@@ -68,14 +110,14 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
 
       {/* Profile Dropdown */}
       {profileOpen && (
-        <View style={styles.profileDropdown}> 
+        <View style={styles.profileDropdown}>
           <Text style={styles.profileText}>User Analysis</Text>
           <TouchableOpacity onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
       )}
-      
+
       {/* Main Content */}
       <View style={styles.mainContent}>{children}</View>
     </View>
@@ -85,18 +127,18 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
 const getStyles = (isDarkMode: boolean) =>
   StyleSheet.create({
     container: {
-      backgroundColor: isDarkMode ? '#121212' : '#f9f9f9',
+      backgroundColor: isDarkMode ? "#121212" : "#f9f9f9",
       flex: 1,
     },
     sidebar: {
-      position: 'absolute',
+      position: "absolute",
       left: 0,
       top: 0,
-      height: '100%',
+      height: "100%",
       width: 250,
-      backgroundColor: isDarkMode ? '#1e1e1e' : 'white',
+      backgroundColor: isDarkMode ? "#1e1e1e" : "white",
       padding: 16,
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
@@ -108,34 +150,34 @@ const getStyles = (isDarkMode: boolean) =>
     },
     icon: {
       fontSize: 24,
-      color: isDarkMode ? '#f9fafb' : 'black',
+      color: isDarkMode ? "#f9fafb" : "black",
     },
     menuItem: {
       fontSize: 18,
-      fontWeight: '600',
+      fontWeight: "600",
       marginBottom: 12,
-      color: isDarkMode ? '#e5e7eb' : '#1f2937',
+      color: isDarkMode ? "#e5e7eb" : "#1f2937",
     },
     topBar: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       padding: 16,
-      backgroundColor: isDarkMode ? '#2563eb' : '#3b82f6',
+      backgroundColor: isDarkMode ? "#2563eb" : "#3b82f6",
     },
     topBarText: {
-      color: 'white',
+      color: "white",
       fontSize: 18,
-      fontWeight: 'bold',
+      fontWeight: "bold",
     },
     profileDropdown: {
-      position: 'absolute',
+      position: "absolute",
       right: 16,
       top: 64,
-      backgroundColor: isDarkMode ? '#2a2a2a' : 'white',
+      backgroundColor: isDarkMode ? "#2a2a2a" : "white",
       padding: 16,
       borderRadius: 8,
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
       shadowRadius: 4,
@@ -144,20 +186,19 @@ const getStyles = (isDarkMode: boolean) =>
     },
     profileText: {
       fontSize: 18,
-      fontWeight: '600',
-      color: isDarkMode ? '#f3f4f6' : '#111827',
+      fontWeight: "600",
+      color: isDarkMode ? "#f3f4f6" : "#111827",
     },
     logoutText: {
       fontSize: 16,
-      color: 'red',
+      color: "red",
       marginTop: 8,
     },
     mainContent: {
       flex: 1,
       padding: 16,
-      backgroundColor: isDarkMode ? '#121212' : '#ffffff',
+      backgroundColor: isDarkMode ? "#121212" : "#ffffff",
     },
   });
-
 
 export default DashboardTemplate;

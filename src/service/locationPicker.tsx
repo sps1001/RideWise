@@ -3,6 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
+type LocationPickerParams = {
+  latitude?: number;
+  longitude?: number;
+  which?: string;
+  onLocationSelect?: (lat: number, long: number) => void;
+};
+
 const LocationPicker = () => {
   const route = useRoute();
   const navigation = useNavigation();
@@ -11,7 +18,7 @@ const LocationPicker = () => {
     longitude = 73.1146,
     which,
     onLocationSelect
-  } = route.params;
+  } = (route.params as LocationPickerParams) || {};
 
   const [lat, setLatitude] = useState(latitude);
   const [long, setLongitude] = useState(longitude);
@@ -23,7 +30,7 @@ const LocationPicker = () => {
     navigation.goBack();
   };
 
-  const isValidCoord = (val) => typeof val === 'number' && !isNaN(val);
+  const isValidCoord = (val: number): boolean => typeof val === 'number' && !isNaN(val);
 
   return (
     <View style={styles.container}>
