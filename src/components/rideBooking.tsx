@@ -455,7 +455,7 @@ const RideBooking = () => {
               navigation.navigate('RideWaiting', {
                 origin: { latitude: startLat, longitude: startLong }, 
                 destination: { latitude: endLat, longitude: endLong}, 
-                realtimeId: requestId,
+                realtimeId: req,
               });
           } catch (error) {
             console.error('Error booking ride:', error);

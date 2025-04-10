@@ -9,6 +9,7 @@ import { getDatabase, ref, push, set ,get,update} from 'firebase/database';
 import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 import * as Location from 'expo-location';
+import { navigate } from 'expo-router/build/global-state/routing';
 
 const RideRequests = () => {
   const { isDarkMode } = useTheme();
@@ -192,7 +193,7 @@ const RideRequests = () => {
   
     try {
       setProcessingId(rideId);
-      
+  
       const dbRT = getDatabase();
       const rideRef = ref(dbRT, `rideRequests/${rideId}`);
       const rideSnap = await get(rideRef);
@@ -202,17 +203,40 @@ const RideRequests = () => {
       }
   
       const rideData = rideSnap.val();
+      const origin = {
+        latitude: rideData.startLat,
+        longitude: rideData.startLong
+      };
+      const destination = {
+        latitude: rideData.endLat,
+        longitude: rideData.endLong
+      };
       const driverName = auth.currentUser.displayName || 'Driver';
       const timestamp = new Date();
+  
+      // ✅ Get driver current location using expo-location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission not granted');
+      }
+  
+      const {
+        coords: { latitude, longitude },
+      } = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
   
       // ✅ Update ride request in Realtime DB
       await update(rideRef, {
         status: 'active',
         driverId: auth.currentUser.uid,
         driverName: driverName,
-        acceptedAt: timestamp.toISOString()
+        driverPhone: auth.currentUser.phoneNumber || 'N/A',
+        driverLocation: {
+          latitude,
+          longitude,
+        },
       });
-  
   
       await addDoc(collection(db, 'history'), {
         userId: rideData.userId,
@@ -224,12 +248,17 @@ const RideRequests = () => {
         date: rideData.date,
         time: rideData.time,
         status: 'active',
-        acceptedAt: timestamp
+        acceptedAt: timestamp,
       });
   
-      // ✅ Update UI
       setRideRequests(prev => prev.filter(ride => ride.id !== rideId));
       Alert.alert('Success', 'Ride accepted successfully!');
+      navigation.navigate('DriverRouteScreen', {
+        origin,
+        destination,
+        realtimeId: rideId,
+      });
+  
     } catch (error) {
       console.error('Error accepting ride:', error);
       Alert.alert('Error', `Failed to accept ride: ${error.message}`);
@@ -237,6 +266,7 @@ const RideRequests = () => {
       setProcessingId(null);
     }
   };
+  
 
   const handleRejectRide = async (rideId) => {
     if (!auth.currentUser) return;

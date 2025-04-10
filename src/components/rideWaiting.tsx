@@ -2,8 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
-import { getDatabase, ref, onValue, off } from 'firebase/database';
+import { getDatabase, ref, onValue, off,ref as dbRef, set } from 'firebase/database';
 import { useTheme } from '../service/themeContext';
+import { update } from 'firebase/database';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,6 +27,11 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
 
   const [rideStatus, setRideStatus] = useState<string>('requested');
   const [driverDetails, setDriverDetails] = useState<{ driverId: string; driverName: string } | null>(null);
+  const [otp, setOtp] = useState<string | null>(null);
+  const [otpGenerated, setOtpGenerated] = useState<boolean>(false); // prevent multiple OTP generations
+  const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [otpVerified, setOtpVerified] = useState(false);
+
 
   // Fit map view
   useEffect(() => {
@@ -37,39 +43,59 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
     }
   }, [origin, destination]);
 
+  const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+
   const listenToRideRequest = (realtimeId, setRideStatus, setDriverDetails) => {
-    console.log('inside ride request listener');
-    if (!realtimeId) {
-        console.log('No realtimeId provided');
-        return;
-    }
-    console.log(realtimeId);
+    if (!realtimeId) return;
   
     const db = getDatabase();
-    const rideRef = ref(db, `rideRequests`);
+    const rideRef = ref(db, `rideRequests/${realtimeId}`);
   
-    onValue(rideRef, (snapshot) => {
-      const data = snapshot.val();
-      console.log('Ride status updated:', data[realtimeId]);
-      const rideData = data[realtimeId];
+    const unsubscribe = onValue(rideRef, async (snapshot) => {
+      const rideData = snapshot.val();
+      console.log('Ride status updated:', rideData);
   
-      if (rideData.status) {
-        console.log(rideData.status);
+      if (rideData?.status) {
         setRideStatus(rideData.status);
+  
         if (rideData.status === 'active' && rideData.driverId && rideData.driverName) {
           setDriverDetails({
             driverId: rideData.driverId,
             driverName: rideData.driverName,
           });
+  
+          if (rideData.driverLocation?.longitude && rideData.driverLocation?.latitude) {
+            setDriverLocation({
+              latitude: rideData.driverLocation.latitude,
+              longitude: rideData.driverLocation.longitude,
+            });
+          }
+  
+          if (!rideData.otp && !otpGenerated) {
+            const generatedOtp = generateOtp();
+            await update(rideRef, { otp: generatedOtp, otpVerified: false });
+            setOtp(generatedOtp);
+            setOtpGenerated(true);
+          } else if (rideData.otp && !otp) {
+            setOtp(rideData.otp);
+          }
+  
+          if (rideData.otpVerified) {
+            setOtpVerified(true);
+          }
         }
       }
     });
+  
+    return () => off(rideRef);
   };
 
   // Listen for ride status updates
   useEffect(() => {
-    console.log('realtime Id:',realtimeId);
-    listenToRideRequest(realtimeId, setRideStatus, setDriverDetails);
+    if (!realtimeId) return;
+
+    const unsubscribe = listenToRideRequest(realtimeId, setRideStatus, setDriverDetails);
+    return unsubscribe;
   }, [realtimeId]);
 
   return (
@@ -85,15 +111,29 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
         }}
         customMapStyle={isDarkMode ? darkMapStyle : []}
       >
-        <Marker coordinate={origin} title="Pickup" />
-        <Marker coordinate={destination} title="Destination" pinColor="green" />
-        <MapViewDirections
-          origin={origin}
-          destination={destination}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={5}
-          strokeColor="#FF8008"
-        />
+        {driverLocation && (
+            <Marker coordinate={driverLocation} title="Driver" pinColor="blue" />
+                )}
+
+            {!otpVerified ? (
+            // Show route from driver to pickup
+            <>
+                {driverLocation && <Marker coordinate={driverLocation} title="Driver" pinColor="blue" />}
+                <Marker coordinate={origin} title="Pickup" />
+            </>
+            ) : (
+            // After OTP is verified, show route from pickup to destination
+            <>
+            <Marker coordinate={destination} title="destination" pinColor='red'/>
+            <MapViewDirections
+                origin={driverLocation}
+                destination={destination}
+                apikey={GOOGLE_MAPS_API_KEY}
+                strokeWidth={5}
+                strokeColor="#4CAF50"
+            />
+            </>
+        )}
       </MapView>
 
       <View style={[styles.waitingContainer, { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff' }]}>
@@ -105,6 +145,11 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
             <Text style={[styles.waitingText, { color: '#FFA72F', marginTop: 5 }]}>
               {driverDetails.driverName}
             </Text>
+            {otp && (
+              <Text style={[styles.waitingText, { color: '#4CAF50', marginTop: 15 }]}>
+                OTP: {otp}
+              </Text>
+            )}
           </>
         ) : (
           <>

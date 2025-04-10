@@ -25,6 +25,7 @@ import Settings from './components/settings';
 import GroupDetailsScreen from './components/GroupDetailsScreen';
 import ResetPassword from './components/ResetPassword';
 import RideWaiting from './components/rideWaiting';
+import DriverRouteScreen from './components/DriverRouteScreen';
 
 export type RootStackParamList = {
   LandingPage: undefined;
@@ -56,6 +57,11 @@ export type RootStackParamList = {
   };
   ResetPassword: undefined;
   RideWaiting:{
+    origin: { latitude: number; longitude: number };
+    destination: { latitude: number; longitude: number };
+    realtimeId: string;
+  };
+  DriverRouteScreen:{
     origin: { latitude: number; longitude: number };
     destination: { latitude: number; longitude: number };
     realtimeId: string;
@@ -134,6 +140,7 @@ const App = () => {
           <Stack.Screen name="UpdateProfile" component={UpdateProfile} />
           <Stack.Screen name="ResetPassword" component={ResetPassword} />
           <Stack.Screen name="RideWaiting" component={RideWaiting} />
+          <Stack.Screen name="DriverRouteScreen" component={DriverRouteScreen} options={{ title: 'Driver Route' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
