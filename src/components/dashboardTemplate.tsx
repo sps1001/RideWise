@@ -91,7 +91,9 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
         >
           <Text style={styles.menuItem}>Dashboard</Text>
         </TouchableOpacity>
-        <Text style={styles.menuItem}>Analytics</Text>
+        <TouchableOpacity onPress={()=>navigation.navigate('AnalyticsScreen')}>
+          <Text style={styles.menuItem}>Analytics</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={async() => {
             const userType = await AsyncStorage.getItem('userType');

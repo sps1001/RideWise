@@ -105,6 +105,7 @@ const Login = () => {
         await AsyncStorage.setItem('authToken', token);
         await AsyncStorage.setItem('tokenExpiry', exp.toString()); // Save expiry time
         await AsyncStorage.setItem('uid', uid); // Save UID
+        await AsyncStorage.setItem('userType', 'user'); // Save user type
 
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (!userDoc.exists()) {

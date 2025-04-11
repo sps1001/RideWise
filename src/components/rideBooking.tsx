@@ -226,7 +226,7 @@ const RideBooking = () => {
       endLat,
       endLong,
       date: date.toDateString(),
-      time: date.toLocaleTimeString(),
+      time: new Date().toISOString(),
       requestedAt: Date.now(),
       status: 'requested'
     };

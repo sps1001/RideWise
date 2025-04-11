@@ -47,6 +47,37 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
     }
   }, [origin, destination]);
 
+  const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const toRad = (val) => (val * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
+  
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+  
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    console.log('Start:', start);
+    const end = new Date(endTime);
+    console.log('End:', end);
+  
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      console.error('Invalid date format for duration calculation', { startTime, endTime });
+      return 0;
+    }
+  
+    const durationInMs = end.getTime() - start.getTime();
+    console.log('Duration in ms:', durationInMs);
+    return Math.floor(durationInMs / 60000);
+  };
+
   const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
   const listenToRideRequest = (realtimeId, setRideStatus, setDriverDetails) => {
@@ -101,6 +132,8 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
                 await update(rideRef, { isUserConfirmed: true });
                 console.log('User confirmed ride completion');
                 Alert.alert('Success', 'Ride completed successfully.');
+                const dist=haversineDistance(rideData.startLat, rideData.startLong,rideData.endLat,rideData.endLong);
+                const dur=calculateDuration(rideData.time, new Date().toISOString());
                 await addDoc(collection(db, 'history'), {
                     userId: rideData.userId,
                     date: new Date().toISOString(),
@@ -111,6 +144,9 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
                     user: rideData.userName,
                     driverId:rideData.driverId,
                     driverName:rideData.driverName,
+                    status: 'Completed',
+                    distance:dist,
+                    duration:dur,
                   });
                 navigation.dispatch(
                     CommonActions.reset({

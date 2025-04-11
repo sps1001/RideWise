@@ -28,6 +28,7 @@ import RideWaiting from './components/rideWaiting';
 import DriverRouteScreen from './components/DriverRouteScreen';
 import DriverSettings from './components/DriverSettings';
 import DriverUsername from './components/DriverUsername';
+import AnalyticsScreen from './components/AnalyticsScreen';
 
 export type RootStackParamList = {
   LandingPage: undefined;
@@ -71,6 +72,7 @@ export type RootStackParamList = {
   DriverUsername:{
     uid: string;
   };
+  AnalyticsScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -148,6 +150,7 @@ const App = () => {
           <Stack.Screen name="DriverRouteScreen" component={DriverRouteScreen} options={{ title: 'Driver Route' }} />
           <Stack.Screen name="DriverSettings" component={DriverSettings} options={{ title: 'Settings' }} />
           <Stack.Screen name="DriverUsername" component={DriverUsername} options={{ title: 'Username' }} />
+          <Stack.Screen name="AnalyticsScreen" component={AnalyticsScreen} options={{ title: 'Analytics' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
