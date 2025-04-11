@@ -66,12 +66,7 @@ const DriverLogin = () => {
       if (verified) {
         setModalVisible(false);
         Alert.alert('Success', 'Email verified successfully!');
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'DriverDashboard' }],
-          })
-        );
+        navigation.navigate('DriverUsername', { uid: rep.uid });
         return;
       }
 

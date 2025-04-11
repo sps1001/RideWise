@@ -5,6 +5,7 @@ import { doc, setDoc,updateDoc,collection,getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../service/themeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UpdateProfile = () => {
     const { isDarkMode } = useTheme();
@@ -16,7 +17,15 @@ const UpdateProfile = () => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const usersRef = collection(db, 'users');
+                const usertype=await AsyncStorage.getItem('userType');
+                console.log('UserType', usertype);
+                let usersRef;
+                if(usertype=='driver'){
+                    usersRef = collection(db, 'drivers');
+                }
+                else{
+                    usersRef = collection(db, 'users');
+                }
                 const snapshot = await getDocs(usersRef);
 
                 const user=snapshot.docs.map(doc => ({
@@ -47,17 +56,37 @@ const UpdateProfile = () => {
         }
 
         try {
-            await  updateDoc(doc(db, 'users', uid), {
+           const usertype=await AsyncStorage.getItem('userType');
+           console.log('UserType', usertype);
+           if(usertype=='driver'){
+            await updateDoc(doc(db, 'drivers', uid), {
                 username: username.trim(),
             });
+           }
+           else{
+            await updateDoc(doc(db, 'users', uid), {
+                username: username.trim(),
+            });
+           }
 
             Alert.alert('Success', 'Profile Updated!');
-            navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Dashboard' }],
-                })
-              );
+            if(usertype=='driver'){
+                navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'DriverDashboard' }],
+                    })
+                  );
+            }
+            else
+            {
+                navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Dashboard' }],
+                    })
+                  );
+            }
         } catch (error) {
             console.error('Error saving username:', error);
             Alert.alert('Error', 'Failed to save username.');

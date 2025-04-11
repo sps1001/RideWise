@@ -93,7 +93,11 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
         </TouchableOpacity>
         <Text style={styles.menuItem}>Analytics</Text>
         <TouchableOpacity
-          onPress={() => {
+          onPress={async() => {
+            const userType = await AsyncStorage.getItem('userType');
+            if(userType === 'driver') {
+              navigation.navigate("DriverSettings");
+            }
             navigation.navigate("Settings");
           }}
         >
