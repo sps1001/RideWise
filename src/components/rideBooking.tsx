@@ -204,41 +204,6 @@ const RideBooking = () => {
   
 
 
-  const addBookingtohistory = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    await addDoc(collection(db, 'history'), {
-      userId: user.uid,
-      date: date.toDateString(),
-      time: date.toLocaleTimeString(),
-      from: startLocation,
-      to: endLocation,
-      status: 'Upcoming',
-      driverId:'',
-    });
-
-    console.log("Booking added to Firestore"); // Add this
-  };
-
-  const addBookingtocarpool = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    await addDoc(collection(db, 'carpool'), {
-      userId: user.uid,
-      userName: user.displayName || 'Anonymous User', // Add user name for drivers to see
-      date: date.toDateString(),
-      time: date.toLocaleTimeString(),
-      from: startLocation,
-      to: endLocation,
-      status: 'requested', // CRITICAL: This status is what drivers look for
-      requestedAt: new Date()
-    });
-
-    console.log("Booking added to Firestore");
-  };
-
   const addRideRequestToRealtimeDB = async () => {
     console.log('Adding ride request to Realtime DB');
     const user = auth.currentUser;
@@ -442,8 +407,6 @@ const RideBooking = () => {
         onPress={async () => {
           try {
             console.log('inside book button')
-            await addBookingtohistory();
-            await addBookingtocarpool();
             const req= await addRideRequestToRealtimeDB();
             Alert.alert(
               'Ride Booked!',

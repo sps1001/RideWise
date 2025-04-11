@@ -3,8 +3,10 @@ import { View, Text, Alert, TextInput, Modal, StyleSheet, TouchableOpacity, Perm
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
-import { getDatabase, ref, get,set , ref as dbRef,update} from 'firebase/database';
+import { getDatabase, ref, get,set , ref as dbRef,update,remove,onValue} from 'firebase/database';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { collection,addDoc } from 'firebase/firestore';
+import { db ,auth} from '../service/firebase';
 
 type RouteParams = {
   origin: { latitude: number; longitude: number };
@@ -25,6 +27,7 @@ const DriverRouteScreen = () => {
   const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
+    let locationSubscription: Location.LocationSubscription | null = null;
     const startWatchingLocation = async () => {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
@@ -32,7 +35,7 @@ const DriverRouteScreen = () => {
           return;
         }
       
-        const locationSubscription = await Location.watchPositionAsync(
+        locationSubscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
             timeInterval: 5000,
@@ -60,16 +63,13 @@ const DriverRouteScreen = () => {
           }
         );
       
-        return () => {
-          locationSubscription?.remove();
-        };
       };
 
-    const unsubscribe = startWatchingLocation();
+      startWatchingLocation();
 
-    return () => {
-      unsubscribe.then((sub) => sub?.remove()).catch(console.error);
-    };
+      return () => {
+        locationSubscription?.remove(); // ✅ Proper cleanup
+      };
   }, []);
 
   const fetchOtpFromDB = async () => {
@@ -97,6 +97,7 @@ const DriverRouteScreen = () => {
   
         // Mark OTP as verified in Firebase
         await update(rideRef, { otpVerified: true });
+        await update(rideRef, { isRideCompleted: false }); // Check if ride is completed
   
         setOtpModalVisible(false);
         Alert.alert('OTP Verified', 'Navigating to drop location...');
@@ -107,6 +108,57 @@ const DriverRouteScreen = () => {
       }
     } else {
       Alert.alert('Invalid OTP', 'Please try again');
+    }
+  };
+
+  const handleDropoff = async () => {
+    try {
+      const d = getDatabase();
+      const rideRef = dbRef(d, `rideRequests/${realtimeId}`);
+      
+      // Fetch actual ride data
+      const snapshot = await get(rideRef);
+      const rideData = snapshot.val();
+  
+      if (!rideData) {
+        Alert.alert('Error', 'No ride data found.');
+        return;
+      }
+  
+      // Mark ride as completed in Firebase
+      await update(rideRef, { isRideCompleted: true ,isUserConfirmed:false});
+  
+      Alert.alert('Waiting for user confirmation', 'Please wait for the user to confirm the drop-off.');
+  
+      const unsubscribe = onValue(rideRef, async (snap) => {
+        const data = snap.val();
+        if (data && data.isUserConfirmed === true) {
+          unsubscribe(); // first stop listening
+          try {
+            // Save to Firestore history
+            await addDoc(collection(db, 'driverHistory'), {
+              userId: data.userId,
+              date: new Date().toISOString(),
+              time: new Date().toLocaleTimeString(),
+              from: data.from,
+              to: data.to,
+              amount: data.amount || 100,
+              user: data.userName,
+              driverId:data.driverId
+            });
+      
+            await remove(rideRef);
+      
+            Alert.alert('Ride Completed', 'Ride successfully completed and saved to history.');
+            navigation.goBack();
+          } catch (error) {
+            console.error('Error saving ride to history:', error);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Failed to mark ride as completed:', error);
+      Alert.alert('Error', 'Could not complete the ride. Please try again.');
     }
   };
 
@@ -126,9 +178,7 @@ const DriverRouteScreen = () => {
       >
         <Marker coordinate={origin} title="Pickup Location" />
         <Marker coordinate={destination} title="Drop Location" pinColor="green" />
-        {driverLocation && (
-          <Marker coordinate={driverLocation} title="Driver" pinColor="blue" />
-        )}
+
         {driverLocation && (
         <MapViewDirections
             origin={driverLocation}
@@ -149,9 +199,16 @@ const DriverRouteScreen = () => {
       )}
 
       {currentStep === 'drop' && (
-        <View style={styles.dropTextContainer}>
-          <Text style={styles.dropText}>On the way to drop-off location...</Text>
+        <View>
+            <View style={styles.dropTextContainer}>
+            <Text style={styles.dropText}>On the way to drop-off location...</Text>
+            
+            </View>
+            <TouchableOpacity style={styles.dropOffButton} onPress={handleDropoff}>
+                <Text style={styles.dropOffButtonText}>Dropped off</Text>
+            </TouchableOpacity>
         </View>
+        
       )}
 
       {/* OTP Modal */}
@@ -241,5 +298,25 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  dropOffButton: {
+    backgroundColor: '#007BFF', // nice blue
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    marginTop: 10,
+  },
+  
+  dropOffButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -28,7 +28,7 @@ const DriverRideHistory = () => {
       
       // Query driver's ride history
       const q = query(
-        collection(db, 'history'),
+        collection(db, 'driverHistory'),
         where('driverId', '==', auth.currentUser.uid)
       );
       
@@ -89,7 +89,7 @@ const DriverRideHistory = () => {
         
         // Find and update user's history
         const userHistoryQuery = query(
-          collection(db, 'history'),
+          collection(db, 'driverHistory'),
           where('rideId', '==', ride.rideId)
         );
         
@@ -218,22 +218,11 @@ const DriverRideHistory = () => {
             <View style={styles.card}>
               <View style={styles.headerRow}>
                 <Text style={styles.routeText}>{item.from} → {item.to}</Text>
-                <View style={[
-                  styles.statusBadge,
-                  item.status === 'completed' ? styles.completedBadge : 
-                  item.status === 'cancelled' ? styles.cancelledBadge : 
-                  styles.activeBadge
-                ]}>
-                  <Text style={styles.statusText}>
-                    {item.status === 'completed' ? 'Completed' : 
-                     item.status === 'cancelled' ? 'Cancelled' : 
-                     'Active'}
-                  </Text>
-                </View>
               </View>
               
               <Text style={styles.dateText}>{item.date} at {item.time}</Text>
               <Text style={styles.passengerText}>Passenger: {item.userName || 'Anonymous'}</Text>
+              <Text >Amount: {item.amount || 'Anonymous'}</Text>
               
               {item.status === 'accepted' && (
                 <View style={styles.buttonRow}>

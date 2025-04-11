@@ -238,19 +238,6 @@ const RideRequests = () => {
         },
       });
   
-      await addDoc(collection(db, 'history'), {
-        userId: rideData.userId,
-        rideId: rideId,
-        driverId: auth.currentUser.uid,
-        driverName: driverName,
-        from: rideData.from,
-        to: rideData.to,
-        date: rideData.date,
-        time: rideData.time,
-        status: 'active',
-        acceptedAt: timestamp,
-      });
-  
       setRideRequests(prev => prev.filter(ride => ride.id !== rideId));
       Alert.alert('Success', 'Ride accepted successfully!');
       navigation.navigate('DriverRouteScreen', {

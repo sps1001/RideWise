@@ -1,10 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity,Alert } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
-import { getDatabase, ref, onValue, off,ref as dbRef, set } from 'firebase/database';
+import { getDatabase, ref, onValue, off,ref as dbRef, set ,remove} from 'firebase/database';
 import { useTheme } from '../service/themeContext';
-import { update } from 'firebase/database';
+import { update} from 'firebase/database';
+import { collection,addDoc } from 'firebase/firestore';
+import {db,auth} from '../service/firebase';
+import { useNavigation,CommonActions } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,6 +24,7 @@ type Props = {
 const GOOGLE_MAPS_API_KEY = 'AIzaSyBGdExMD_KJEa-QVVZGM4bsLbVLfxFMGLA';
 
 const RideWaiting: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation();
   const { isDarkMode } = useTheme();
   const mapRef = useRef<MapView>(null);
   const { origin, destination, realtimeId } = route.params;
@@ -48,8 +52,8 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
   const listenToRideRequest = (realtimeId, setRideStatus, setDriverDetails) => {
     if (!realtimeId) return;
   
-    const db = getDatabase();
-    const rideRef = ref(db, `rideRequests/${realtimeId}`);
+    const d = getDatabase();
+    const rideRef = ref(d, `rideRequests/${realtimeId}`);
   
     const unsubscribe = onValue(rideRef, async (snapshot) => {
       const rideData = snapshot.val();
@@ -85,6 +89,45 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
           }
         }
       }
+      if (rideData?.isRideCompleted && !rideData?.isUserConfirmed) {
+        console.log('Ride completed:', rideData);
+        Alert.alert(
+          'Ride Completed',
+          'Your driver has dropped you off. Confirm completion?',
+          [
+            {
+              text: 'Confirm',
+              onPress: async () => {
+                await update(rideRef, { isUserConfirmed: true });
+                console.log('User confirmed ride completion');
+                Alert.alert('Success', 'Ride completed successfully.');
+                await addDoc(collection(db, 'history'), {
+                    userId: rideData.userId,
+                    date: new Date().toISOString(),
+                    time: new Date().toLocaleTimeString(),
+                    from: rideData.from,
+                    to: rideData.to,
+                    amount: rideData.amount || 100,
+                    user: rideData.userName,
+                    driverId:rideData.driverId,
+                    driverName:rideData.driverName,
+                  });
+                navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Dashboard' }],
+                    })
+                  );
+              },
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+          ],
+          { cancelable: false }
+        );
+      }
     });
   
     return () => off(rideRef);
@@ -98,11 +141,21 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
     return unsubscribe;
   }, [realtimeId]);
 
+  const handleCancelBooking = async () => {
+    const db = getDatabase();
+    const rideRef = ref(db, `rideRequests/${realtimeId}`);
+    await remove(rideRef);
+    navigation.goBack();
+    setRideStatus('cancelled');
+  };
+
   return (
     <View style={styles.container}>
       <MapView
         ref={mapRef}
         style={styles.map}
+        showsUserLocation
+        followsUserLocation
         initialRegion={{
           latitude: origin.latitude,
           longitude: origin.longitude,
@@ -111,9 +164,7 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
         }}
         customMapStyle={isDarkMode ? darkMapStyle : []}
       >
-        {driverLocation && (
-            <Marker coordinate={driverLocation} title="Driver" pinColor="blue" />
-                )}
+        
 
             {!otpVerified ? (
             // Show route from driver to pickup
@@ -157,6 +208,11 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
               Looking for drivers...
             </Text>
             <ActivityIndicator size="large" color="#FFA72F" style={{ marginTop: 10 }} />
+            <TouchableOpacity onPress={()=>handleCancelBooking()}>
+                <Text style={[styles.waitingText, { color: '#FFA72F', marginTop: 15 }]}>
+                     Cancel Booking
+                </Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
