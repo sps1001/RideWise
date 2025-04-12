@@ -25,10 +25,6 @@ const DriverLogin = () => {
   type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
   const navigation = useNavigation<NavigationProp>();
 
-
-  
-
-
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
@@ -64,6 +60,10 @@ const DriverLogin = () => {
       verified = rep.emailVerified;
 
       if (verified) {
+        // Update Firestore to set isVerified to true
+        const driverDocRef = doc(db, 'drivers', rep.uid);
+        await setDoc(driverDocRef, { isVerified: true }, { merge: true });
+
         setModalVisible(false);
         Alert.alert('Success', 'Email verified successfully!');
         navigation.navigate('DriverUsername', { uid: rep.uid });
@@ -76,7 +76,7 @@ const DriverLogin = () => {
     if (!verified) {
       showAlert("Still not verified after 2 minutes.");
     }
-  }
+  };
 
   const handleAuthAction = async () => {
     if (isLogin) {
@@ -134,7 +134,7 @@ const DriverLogin = () => {
         await setDoc(doc(db, 'drivers', rep.uid), {
           email: email,
           createdAt: new Date(),
-          isVerified: false,
+          isVerified: false, // Initially set to false
           status: 'pending',
         });
         
