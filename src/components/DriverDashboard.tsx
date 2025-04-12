@@ -1,64 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc, query, collection, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../service/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../service/themeContext';
 import DashboardTemplate from './dashboardTemplate';
 
 const DriverDashboard = () => {
   const { isDarkMode } = useTheme();
   const navigation = useNavigation();
-  const [isVerified, setIsVerified] = useState(false);
   const [pendingRides, setPendingRides] = useState(0);
   const [driverName, setDriverName] = useState('');
-  
+
   useEffect(() => {
-    const checkVerification = async () => {
+    const fetchDashboardData = async () => {
       const user = auth.currentUser;
       if (!user) return;
-      
-      const driverDoc = await getDoc(doc(db, 'drivers', user.uid));
-      if (driverDoc.exists()) {
-        const driverData = driverDoc.data();
-        setIsVerified(true);
-        setDriverName(driverData.username || 'Driver');
-        
-        // Fetch actual pending ride requests count
-        const q = query(
-          collection(db, 'carpool'),
-          where('status', '==', 'requested')
+
+      try {
+        const driverDoc = await getDocs(
+          query(collection(db, 'drivers'), where('uid', '==', user.uid))
         );
-        const querySnapshot = await getDocs(q);
-        setPendingRides(querySnapshot.size);
-      } else {
-        setIsVerified(true);
-        setDriverName('Driver');
-        
-        // Still fetch ride requests even if driver document doesn't exist
-        const q = query(
-          collection(db, 'carpool'),
-          where('status', '==', 'requested')
-        );
-        const querySnapshot = await getDocs(q);
-        setPendingRides(querySnapshot.size);
+        if (!driverDoc.empty) {
+          const data = driverDoc.docs[0].data();
+          setDriverName(data.username || 'Driver');
+        } else {
+          setDriverName('Driver');
+        }
+
+        const rideQuery = query(collection(db, 'carpool'), where('status', '==', 'requested'));
+        const rideSnapshot = await getDocs(rideQuery);
+        setPendingRides(rideSnapshot.size);
+      } catch (err) {
+        console.error('❌ Error loading dashboard data:', err);
       }
     };
-    
-    checkVerification();
-    
-    // Set up a real-time listener for ride requests
-    const q = query(
-      collection(db, 'carpool'),
-      where('status', '==', 'requested')
+
+    fetchDashboardData();
+
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'carpool'), where('status', '==', 'requested')),
+      (snapshot) => {
+        setPendingRides(snapshot.docs.length);
+        console.log(`🔄 Real-time update: ${snapshot.docs.length} pending rides`);
+      }
     );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setPendingRides(snapshot.docs.length);
-      console.log(`🔄 Real-time update: ${snapshot.docs.length} pending rides`);
-    });
-    
+
     return () => unsubscribe();
   }, []);
 
@@ -68,21 +55,21 @@ const DriverDashboard = () => {
       description: `${pendingRides} pending requests`,
       route: 'RideRequests',
       source: require('../assets/download.jpg'),
-      enabled: true // Always enabled
+      enabled: true,
     },
     {
-      title: 'Driver Verification',
-      description: 'Status: Verified', // Always show as verified
-      route: 'DriverVerification',
+      title: 'My Vehicle Details',
+      description: 'View or update your vehicle info',
+      route: 'DriverVehicleDetailsScreen',
       source: require('../assets/download-1.jpg'),
-      enabled: true
+      enabled: true,
     },
     {
       title: 'Ride History',
       description: 'View your completed rides',
       route: 'DriverRideHistory',
       source: require('../assets/images.jpg'),
-      enabled: true // Always enabled
+      enabled: true,
     },
   ];
 
@@ -93,17 +80,13 @@ const DriverDashboard = () => {
       <View style={styles.container}>
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeText}>Welcome, {driverName}</Text>
-          <Text style={styles.statusText}>
-            Status: Verified Driver
-          </Text>
+          <Text style={styles.statusText}>Status: Verified Driver</Text>
         </View>
 
-        {/* Remove the warning card that shows when not verified */}
-        
         {cardData.map((card, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.card}  // Remove the conditional styling
+            style={styles.card}
             onPress={() => navigation.navigate(card.route as never)}
           >
             <Image source={card.source} style={{ width: 40, height: 40 }} />
@@ -137,17 +120,6 @@ const getStyles = (isDarkMode: boolean) =>
       color: isDarkMode ? '#9ca3af' : '#6b7280',
       marginTop: 4,
     },
-    warningCard: {
-      backgroundColor: isDarkMode ? '#422006' : '#FEFCE8',
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 20,
-      borderLeftWidth: 4,
-      borderLeftColor: '#F59E0B',
-    },
-    warningText: {
-      color: isDarkMode ? '#FDE68A' : '#92400E',
-    },
     card: {
       width: '100%',
       paddingVertical: 30,
@@ -159,12 +131,8 @@ const getStyles = (isDarkMode: boolean) =>
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 5,
-      zIndex: 0,
       marginBottom: 16,
       backgroundColor: isDarkMode ? '#1f1f1f' : '#f8f9fa',
-    },
-    disabledCard: {
-      opacity: 0.7,
     },
     cardTitle: {
       fontSize: 20,

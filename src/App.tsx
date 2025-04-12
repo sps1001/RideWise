@@ -29,6 +29,7 @@ import DriverRouteScreen from './components/DriverRouteScreen';
 import DriverSettings from './components/DriverSettings';
 import DriverUsername from './components/DriverUsername';
 import AnalyticsScreen from './components/AnalyticsScreen';
+import DriverVehicleDetailsScreen from './components/DriverVehicleDetailsScreen';
 
 export type RootStackParamList = {
   LandingPage: undefined;
@@ -73,6 +74,7 @@ export type RootStackParamList = {
     uid: string;
   };
   AnalyticsScreen: undefined;
+  DriverVehicleDetailsScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -151,6 +153,7 @@ const App = () => {
           <Stack.Screen name="DriverSettings" component={DriverSettings} options={{ title: 'Settings' }} />
           <Stack.Screen name="DriverUsername" component={DriverUsername} options={{ title: 'Username' }} />
           <Stack.Screen name="AnalyticsScreen" component={AnalyticsScreen} options={{ title: 'Analytics' }} />
+          <Stack.Screen name="DriverVehicleDetailsScreen" component={DriverVehicleDetailsScreen} options={{ title: 'My Vehicle Details' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
