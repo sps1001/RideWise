@@ -95,11 +95,11 @@ const Profile = () => {
       {userData.vehicle.make ? (
         <>
           <Text style={styles.label}>Vehicle Details:</Text>
-          <Text style={styles.value}>Make: {userData.vehicle.make}</Text>
-          <Text style={styles.value}>Model: {userData.vehicle.model}</Text>
-          <Text style={styles.value}>Year: {userData.vehicle.year}</Text>
           <Text style={styles.value}>Color: {userData.vehicle.color}</Text>
           <Text style={styles.value}>License Plate: {userData.vehicle.licensePlate}</Text>
+          <Text style={styles.value}>Make: {userData.vehicle.make}</Text>
+          <Text style={styles.value}>Model: {userData.vehicle.model}</Text>
+          <Text style={styles.value}>Year: {userData.vehicle.year}</Text>          
         </>
       ) : null}
     </View>
