@@ -10,6 +10,7 @@ import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 import * as Location from 'expo-location';
 import { navigate } from 'expo-router/build/global-state/routing';
+import { UserX } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RideRequests = () => {
@@ -19,20 +20,29 @@ const RideRequests = () => {
   const [rideRequests, setRideRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const [driverAvailable, setDriverAvailable] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+
+
+  useEffect(() => {
+    const checkDriverStatus = async () => {
+      const uid = await AsyncStorage.getItem('uid');
+      if (!uid) return;
+
+      const driverDoc = await getDoc(doc(db, 'drivers', uid));
+      if (driverDoc.exists()) {
+        const data = driverDoc.data();
+        setDriverAvailable(data.status=== 'available'? true : false);
+        setIsVerified(data.isVerified);
+      } else {
+        setDriverAvailable(false);
+      }
+    };
+
+    checkDriverStatus();
+  }, []);
   
   useEffect(() => {
-    const checkVerification = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-      
-      // Always set verification status to true
-      setIsVerified(true);
-      
-      // Rest of the code to fetch ride requests
-    };
-    
-    checkVerification();
     fetchRideRequests();
   }, []);
   
@@ -213,7 +223,7 @@ const RideRequests = () => {
         longitude: rideData.endLong
       };
       let driverName
-      const uid=AsyncStorage.getItem('uid');
+      const uid=await AsyncStorage.getItem('uid');
       const driverDoc = await getDoc(doc(db, 'drivers', uid));
       if (driverDoc.exists()) {
           const driverData = driverDoc.data();
@@ -305,17 +315,32 @@ const RideRequests = () => {
       </View>
     );
   }
+
+  if (!driverAvailable) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.iconWrapper}>
+          <UserX size={60} color="#9ca3af" />
+        </View>
+        <Text style={styles.title}>You're Unavailable</Text>
+        <Text style={styles.subtitle}>
+          To receive ride requests, please change your status to available.
+        </Text>
+      </View>
+    );
+  }
+  if (!isVerified) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-lg font-semibold text-gray-600">You are not verified . Verify your details first</Text>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Available Ride Requests</Text>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={fetchRideRequests}
-        >
-          <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>         Available Ride Requests</Text>
       </View>
       
       {rideRequests.length === 0 ? (
@@ -408,6 +433,11 @@ const getStyles = (isDarkMode) => StyleSheet.create({
     padding: 16,
     backgroundColor: isDarkMode ? '#121212' : '#f9f9f9',
   },
+  iconWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -424,6 +454,9 @@ const getStyles = (isDarkMode) => StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     color: isDarkMode ? '#f3f4f6' : '#1f2937',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -537,6 +570,11 @@ const getStyles = (isDarkMode) => StyleSheet.create({
   statusText: {
     color: 'white',
     fontWeight: '600',
+  },
+  subtitle: {
+    marginTop: 8,
+    color: '#6b7280', // Tailwind's gray-500
+    textAlign: 'center',
   },
 });
 
