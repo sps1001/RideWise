@@ -68,19 +68,22 @@ const DriverDashboard = () => {
       title: 'Ride Requests',
       description: `${pendingRides} pending requests`,
       route: 'RideRequests',
-      source: require('../assets/download.jpg'),
+      source: require('../assets/ridereq.png'),
+      iconStyle: { width: 50, height: 50 }
     },
     {
       title: 'My Vehicle Details',
       description: 'View or update your vehicle info',
       route: 'DriverVehicleDetailsScreen',
-      source: require('../assets/download-1.jpg'),
+      source: require('../assets/myv.png'),
+      iconStyle: { width: 80, height: 40 }
     },
     {
       title: 'Ride History',
       description: 'View your completed rides',
       route: 'DriverRideHistory',
-      source: require('../assets/images.jpg'),
+      source: require('../assets/his.png'),
+      iconStyle: { width: 50, height: 50 }
     },
   ];
 
@@ -103,7 +106,7 @@ const DriverDashboard = () => {
             style={styles.card}
             onPress={() => navigation.navigate(card.route as never)}
           >
-            <Image source={card.source} style={{ width: 40, height: 40 }} />
+            <Image source={card.source} style={[{ marginBottom: 8 }, card.iconStyle]} />
             <Text style={styles.cardTitle}>{card.title}</Text>
             <Text style={styles.cardDescription}>{card.description}</Text>
           </TouchableOpacity>

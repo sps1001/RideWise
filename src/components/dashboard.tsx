@@ -44,21 +44,24 @@ const Dashboard = () => {
       description: 'Find and book rides instantly.',
       icon: 'car',
       route: 'RideBooking',
-      source: require('../assets/download.jpg')
+      source: require('../assets/bookRide.png'),
+      iconStyle: { width: 80, height: 60 }
     },
     {
       title: 'Carpooling',
       description: 'Share rides and save costs.',
       icon: 'account-group',
       route: 'CarpoolScreen',
-      source: require('../assets/download-1.jpg')
+      source: require('../assets/carpoolicon.png'),
+      iconStyle: { width: 80, height: 60 }
     },
     {
       title: 'My Rides',
       description: 'View your upcoming and past rides.',
       icon: 'history',
       route: 'RideHistory',
-      source: require('../assets/images.jpg')
+      source: require('../assets/x.png'),
+      iconStyle: { width: 80, height: 60 }
     },
   ];
 
@@ -73,7 +76,8 @@ const Dashboard = () => {
             style={styles.card}
             onPress={() => navigation.navigate(card.route as never)}
           >
-            <Image source={card.source} style={{ width: 40, height: 40 }} />
+            <Image source={card.source} style={[{ marginBottom: 8 }, card.iconStyle]} />
+
 
             <Text style={styles.cardTitle}>{card.title}</Text>
             <Text style={styles.cardDescription}>{card.description}</Text>
