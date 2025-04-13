@@ -132,7 +132,7 @@ const DriverLogin = () => {
           email: email,
           createdAt: new Date(),
           isVerified: false, // Initially set to false
-          status: 'pending',
+          status: 'unavailable',
         });
         
         userVerification(rep);

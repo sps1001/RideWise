@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 import DashboardTemplate from './dashboardTemplate';
@@ -11,43 +11,56 @@ const DriverDashboard = () => {
   const navigation = useNavigation();
   const [pendingRides, setPendingRides] = useState(0);
   const [driverName, setDriverName] = useState('');
+  const [availability, setAvailability] = useState('unavailable');
+  const [isSwitchOn, setIsSwitchOn] = useState(false);
+
+  const currentUserUID = auth.currentUser?.uid;
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
+      if (!currentUserUID) {
+        console.warn('⚠️ No logged-in user found');
+        return;
+      }
 
       try {
-        const driverDoc = await getDocs(
-          query(collection(db, 'drivers'), where('uid', '==', user.uid))
-        );
-        if (!driverDoc.empty) {
-          const data = driverDoc.docs[0].data();
-          setDriverName(data.username || 'Driver');
-        } else {
-          setDriverName('Driver');
-        }
+        const driverDocRef = doc(db, 'drivers', currentUserUID);
+        const driverSnap = await getDoc(driverDocRef);
 
-        const rideQuery = query(collection(db, 'carpool'), where('status', '==', 'requested'));
-        const rideSnapshot = await getDocs(rideQuery);
-        setPendingRides(rideSnapshot.size);
+        if (driverSnap.exists()) {
+          const data = driverSnap.data();
+          setDriverName(data.username || 'Driver');
+          setAvailability(data.status || 'unavailable');
+          setIsSwitchOn(data.status === 'available');
+        } else {
+          console.warn('❌ No driver document found with this UID');
+        }
       } catch (err) {
-        console.error('❌ Error loading dashboard data:', err);
+        console.error('❌ Error fetching dashboard data:', err);
       }
     };
 
     fetchDashboardData();
+  }, [currentUserUID]);
 
-    const unsubscribe = onSnapshot(
-      query(collection(db, 'carpool'), where('status', '==', 'requested')),
-      (snapshot) => {
-        setPendingRides(snapshot.docs.length);
-        console.log(`🔄 Real-time update: ${snapshot.docs.length} pending rides`);
-      }
-    );
+  const handleToggleAvailability = async () => {
+    if (!currentUserUID) return;
 
-    return () => unsubscribe();
-  }, []);
+    try {
+      const newStatus = isSwitchOn ? 'unavailable' : 'available';
+      const driverDocRef = doc(db, 'drivers', currentUserUID);
+
+      await updateDoc(driverDocRef, {
+        status: newStatus,
+         updatedAt: new Date(),
+      });
+
+      setIsSwitchOn(!isSwitchOn);
+      setAvailability(newStatus);
+    } catch (err) {
+      console.error('❌ Failed to toggle availability:', err);
+    }
+  };
 
   const cardData = [
     {
@@ -55,21 +68,18 @@ const DriverDashboard = () => {
       description: `${pendingRides} pending requests`,
       route: 'RideRequests',
       source: require('../assets/download.jpg'),
-      enabled: true,
     },
     {
       title: 'My Vehicle Details',
       description: 'View or update your vehicle info',
       route: 'DriverVehicleDetailsScreen',
       source: require('../assets/download-1.jpg'),
-      enabled: true,
     },
     {
       title: 'Ride History',
       description: 'View your completed rides',
       route: 'DriverRideHistory',
       source: require('../assets/images.jpg'),
-      enabled: true,
     },
   ];
 
@@ -80,7 +90,10 @@ const DriverDashboard = () => {
       <View style={styles.container}>
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeText}>Welcome, {driverName}</Text>
-          <Text style={styles.statusText}>Status: Verified Driver</Text>
+          <View style={styles.toggleRow}>
+            <Text style={styles.statusText}>Status: {availability}</Text>
+            <Switch value={isSwitchOn} onValueChange={handleToggleAvailability} />
+          </View>
         </View>
 
         {cardData.map((card, index) => (
@@ -115,10 +128,15 @@ const getStyles = (isDarkMode: boolean) =>
       fontWeight: 'bold',
       color: isDarkMode ? '#f3f4f6' : '#1f2937',
     },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
     statusText: {
       fontSize: 16,
       color: isDarkMode ? '#9ca3af' : '#6b7280',
-      marginTop: 4,
     },
     card: {
       width: '100%',
