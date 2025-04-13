@@ -121,7 +121,10 @@ const DashboardTemplate = ({ children }: { children: React.ReactNode }) => {
       {/* Profile Dropdown */}
       {profileOpen && (
         <View style={styles.profileDropdown}>
+        {/* make change for profile */}
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
           <Text style={styles.profileText}>Profile</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>

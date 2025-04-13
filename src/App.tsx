@@ -30,6 +30,7 @@ import DriverSettings from './components/DriverSettings';
 import DriverUsername from './components/DriverUsername';
 import AnalyticsScreen from './components/AnalyticsScreen';
 import DriverVehicleDetailsScreen from './components/DriverVehicleDetailsScreen';
+import Profile from './components/Profile';
 
 export type RootStackParamList = {
   LandingPage: undefined;
@@ -154,6 +155,7 @@ const App = () => {
           <Stack.Screen name="DriverUsername" component={DriverUsername} options={{ title: 'Username' }} />
           <Stack.Screen name="AnalyticsScreen" component={AnalyticsScreen} options={{ title: 'Analytics' }} />
           <Stack.Screen name="DriverVehicleDetailsScreen" component={DriverVehicleDetailsScreen} options={{ title: 'My Vehicle Details' }} />
+          <Stack.Screen name="Profile" component={Profile} />
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>
