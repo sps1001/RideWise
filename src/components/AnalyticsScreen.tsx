@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { useTheme } from '../service/themeContext';
 import { auth, db } from '../service/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const screenWidth = Dimensions.get('window').width;
 
 const AnalyticsScreen = () => {
   const { isDarkMode } = useTheme();
@@ -22,26 +26,17 @@ const AnalyticsScreen = () => {
   const fetchUserType = async () => {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-
-    // Fetch userType (assuming a `users` collection holds roles)
-    const userType= await AsyncStorage.getItem('userType');
+    const userType = await AsyncStorage.getItem('userType');
     setUserType(userType === 'driver' ? 'driver' : 'user');
   };
 
   const fetchAnalytics = async () => {
     try {
       const uid = auth.currentUser?.uid;
-      console.log('UID:', uid);
       if (!uid) return;
 
       let targetCollection = userType === 'driver' ? 'driverHistory' : 'history';
-      let q;
-      if(userType === 'driver') {
-        q = query(collection(db, targetCollection), where('driverId', '==', uid));
-      }
-      else{
-        q = query(collection(db, targetCollection), where('userId', '==', uid));
-      }
+      let q = query(collection(db, targetCollection), where(userType === 'driver' ? 'driverId' : 'userId', '==', uid));
       const querySnapshot = await getDocs(q);
 
       let total = 0, completed = 0, cancelled = 0;
@@ -81,10 +76,7 @@ const AnalyticsScreen = () => {
   };
 
   useEffect(() => {
-    const init = async () => {
-      await fetchUserType();
-    };
-    init();
+    fetchUserType();
   }, []);
 
   useEffect(() => {
@@ -95,34 +87,32 @@ const AnalyticsScreen = () => {
 
   if (loading || userType === null) {
     return (
-      <View style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
+      <View style={[styles.container, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9' }]}>        
         <ActivityIndicator size="large" color={isDarkMode ? '#60a5fa' : '#2563eb'} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: isDarkMode ? '#1f2937' : '#f3f4f6' }]}>
-      <Text style={[styles.header, { color: isDarkMode ? '#93c5fd' : '#3b82f6' }]}>
-        {userType === 'driver' ? 'Driver' : 'User'} Ride Analytics
-      </Text>
+    <ScrollView style={[styles.container, { backgroundColor: isDarkMode ? '#0f172a' : '#f1f5f9' }]}>
+      <Text style={[styles.header, { color: isDarkMode ? '#e0f2fe' : '#1e3a8a' }]}>📊 {userType === 'driver' ? 'Driver' : 'User'} Ride Analytics</Text>
 
       <View style={styles.cardContainer}>
-        <StatCard label="Total Rides" value={stats.totalRides} color="#6366f1" />
-        <StatCard label="Completed" value={stats.completedRides} color="#10b981" />
-        <StatCard label="Cancelled" value={stats.cancelledRides} color="#ef4444" />
+        <StatCard icon="car" label="Total Rides" value={stats.totalRides} gradient={['#6366f1', '#818cf8']} />
+        <StatCard icon="check-circle-outline" label="Completed" value={stats.completedRides} gradient={['#10b981', '#34d399']} />
+        <StatCard icon="cancel" label="Cancelled" value={stats.cancelledRides} gradient={['#ef4444', '#f87171']} />
 
         {userType === 'driver' ? (
-            <>
-                <StatCard label="Total Earnings" value={`₹${stats.totalEarnings.toFixed(2)}`} color="#f59e0b" />
-                <StatCard label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} color="#3b82f6" />
-                <StatCard label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} color="#8b5cf6" />
-            </>
+          <>
+            <StatCard icon="currency-inr" label="Total Earnings" value={`₹${stats.totalEarnings.toFixed(2)}`} gradient={['#f59e0b', '#fbbf24']} />
+            <StatCard icon="map-marker-distance" label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} gradient={['#3b82f6', '#60a5fa']} />
+            <StatCard icon="clock-outline" label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} gradient={['#8b5cf6', '#a78bfa']} />
+          </>
         ) : (
           <>
-            <StatCard label="Total Spent" value={`₹${stats.totalCost.toFixed(2)}`} color="#f59e0b" />
-            <StatCard label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} color="#3b82f6" />
-            <StatCard label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} color="#8b5cf6" />
+            <StatCard icon="currency-inr" label="Total Spent" value={`₹${stats.totalCost.toFixed(2)}`} gradient={['#f59e0b', '#fbbf24']} />
+            <StatCard icon="map-marker-distance" label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} gradient={['#3b82f6', '#60a5fa']} />
+            <StatCard icon="clock-outline" label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} gradient={['#8b5cf6', '#a78bfa']} />
           </>
         )}
       </View>
@@ -130,11 +120,12 @@ const AnalyticsScreen = () => {
   );
 };
 
-const StatCard = ({ label, value, color }: { label: string; value: string | number; color: string }) => (
-  <View style={[styles.statCard, { borderColor: color }]}>
-    <Text style={[styles.statLabel, { color }]}>{label}</Text>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
-  </View>
+const StatCard = ({ icon, label, value, gradient }: { icon: string; label: string; value: string | number; gradient: string[] }) => (
+  <LinearGradient colors={gradient} style={styles.statCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+    <MaterialCommunityIcons name={icon} size={26} color="#fff" style={{ marginBottom: 6 }} />
+    <Text style={styles.statLabel}>{label}</Text>
+    <Text style={styles.statValue}>{value}</Text>
+  </LinearGradient>
 );
 
 const styles = StyleSheet.create({
@@ -143,29 +134,35 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 16,
+    marginVertical: 20,
   },
   cardContainer: {
     flexDirection: 'column',
-    gap: 12,
+    gap: 16,
   },
   statCard: {
-    borderWidth: 2,
-    borderRadius: 10,
-    padding: 16,
-    backgroundColor: '#ffffff10',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   statLabel: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   statValue: {
+    color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
-    marginTop: 6,
+    marginTop: 4,
   },
 });
 
