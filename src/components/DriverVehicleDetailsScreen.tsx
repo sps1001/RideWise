@@ -12,10 +12,11 @@ const DriverVehicleDetailsScreen = () => {
     year: '',
     color: '',
     licensePlate: '',
-      });
+  });
 
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -25,9 +26,15 @@ const DriverVehicleDetailsScreen = () => {
       try {
         const docRef = doc(db, 'drivers', user.uid);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().vehicleInfo) {
-          setVehicleDetails(docSnap.data().vehicleInfo);
-          setIsEditing(true);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.vehicleInfo) {
+            setVehicleDetails(data.vehicleInfo);
+            setIsEditing(true);
+          }
+          if (data.isVerified) {
+            setIsVerified(true);
+          }
         }
       } catch (error) {
         console.error('Error fetching vehicle details:', error);
@@ -39,6 +46,7 @@ const DriverVehicleDetailsScreen = () => {
 
   const handleSubmit = async () => {
     const { color, licensePlate, make, model, year } = vehicleDetails;
+
     if (!color || !licensePlate || !make || !model || !year) {
       Alert.alert('Missing Fields', 'Please fill in all fields.');
       return;
@@ -47,6 +55,7 @@ const DriverVehicleDetailsScreen = () => {
     try {
       setLoading(true);
       const docRef = doc(db, 'drivers', user.uid);
+
       await setDoc(
         docRef,
         {
@@ -57,12 +66,14 @@ const DriverVehicleDetailsScreen = () => {
             model,
             year,
           },
+          isVerified: true, // ✅ Set to true after valid vehicle info
           updatedAt: new Date(),
         },
         { merge: true }
       );
 
-      Alert.alert('Success', isEditing ? 'Vehicle details updated.' : 'Vehicle details added.');
+      setIsVerified(true); // ✅ Update state after save
+      Alert.alert('Success', isEditing ? 'Vehicle details updated and verified.' : 'Vehicle details added and verified.');
       setIsEditing(true);
     } catch (error) {
       console.error('Error saving vehicle details:', error);
@@ -77,6 +88,11 @@ const DriverVehicleDetailsScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{isEditing ? 'Update Vehicle Details' : 'Add Vehicle Details'}</Text>
+
+      {/* ✅ Verification Badge */}
+      <Text style={[styles.verificationStatus, { color: isVerified ? 'green' : '#6b7280' }]}>
+        {isVerified ? '🔒 Verified' : '🔓 Not Verified'}
+      </Text>
 
       <TextInput
         style={styles.input}
@@ -147,8 +163,14 @@ const getStyles = (isDarkMode) =>
       fontSize: 24,
       fontWeight: 'bold',
       color: isDarkMode ? '#f3f4f6' : '#1f2937',
-      marginBottom: 20,
+      marginBottom: 10,
       textAlign: 'center',
+    },
+    verificationStatus: {
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+      marginBottom: 16,
     },
     input: {
       backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',

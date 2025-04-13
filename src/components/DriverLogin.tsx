@@ -46,37 +46,34 @@ const DriverLogin = () => {
   const userVerification = async (rep) => {
     await sendEmailVerification(rep);
     Alert.alert('Verification Sent', 'Verification email sent! Please check your inbox.');
-
+  
     setSignedUpEmail(email);
     setModalVisible(true);
-
-    // ⏳ Wait for verification
+  
     let verified = false;
     let tries = 0;
-
+  
     while (!verified && tries < 40) {
       tries++;
       await rep.reload();
       verified = rep.emailVerified;
-
+  
       if (verified) {
-        // Update Firestore to set isVerified to true
-        const driverDocRef = doc(db, 'drivers', rep.uid);
-        await setDoc(driverDocRef, { isVerified: true }, { merge: true });
-
+        // ✅ Do NOT set isVerified to true here anymore
         setModalVisible(false);
         Alert.alert('Success', 'Email verified successfully!');
         navigation.navigate('DriverUsername', { uid: rep.uid });
         return;
       }
-
+  
       await new Promise((res) => setTimeout(res, 3000));
     }
-
+  
     if (!verified) {
       showAlert("Still not verified after 2 minutes.");
     }
   };
+  
 
   const handleAuthAction = async () => {
     if (isLogin) {
