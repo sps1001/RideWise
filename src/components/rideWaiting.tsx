@@ -5,8 +5,11 @@ import MapViewDirections from 'react-native-maps-directions';
 import { getDatabase, ref, onValue, off,ref as dbRef, set ,remove} from 'firebase/database';
 import { useTheme } from '../service/themeContext';
 import { update} from 'firebase/database';
-import { collection,addDoc } from 'firebase/firestore';
+import { collection,addDoc, updateDoc,doc, arrayUnion } from 'firebase/firestore';
 import {db,auth} from '../service/firebase';
+import { AirbnbRating } from 'react-native-ratings';
+import Modal from 'react-native-modal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation,CommonActions } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
@@ -31,10 +34,19 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
 
   const [rideStatus, setRideStatus] = useState<string>('requested');
   const [driverDetails, setDriverDetails] = useState<{ driverId: string; driverName: string } | null>(null);
+  const [vehicleInfo, setVehicleInfo] = useState<{
+    make: string;
+    model: string;
+    year: string;
+    color: string;
+    licensePlate: string;
+  } | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
   const [otpGenerated, setOtpGenerated] = useState<boolean>(false); // prevent multiple OTP generations
   const [driverLocation, setDriverLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
 
 
   // Fit map view
@@ -66,8 +78,7 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
   const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 
   const listenToRideRequest = (realtimeId, setRideStatus, setDriverDetails) => {
-    if (!realtimeId) return;
-  
+    if (!realtimeId) return; 
     const d = getDatabase();
     const rideRef = ref(d, `rideRequests/${realtimeId}`);
   
@@ -103,6 +114,10 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
           if (rideData.otpVerified) {
             setOtpVerified(true);
           }
+          console.log(rideData)
+          if (rideData?.vehicleInfo) {
+            setVehicleInfo(rideData.vehicleInfo);
+          }
         }
       }
       if (rideData?.isRideCompleted && !rideData?.isUserConfirmed) {
@@ -114,9 +129,9 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
             {
               text: 'Confirm',
               onPress: async () => {
-                await update(rideRef, { isUserConfirmed: true });
+                
                 console.log('User confirmed ride completion');
-                Alert.alert('Success', 'Ride completed successfully.');          
+                setShowRatingModal(true);         
                 const dur=calculateDuration(rideData.time, new Date().toISOString());
                 await addDoc(collection(db, 'history'), {
                     userId: rideData.userId,
@@ -132,12 +147,6 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
                     distance:rideData.distance,
                     duration:dur,
                   });
-                navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: 'Dashboard' }],
-                    })
-                  );
               },
             },
             {
@@ -217,10 +226,18 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
               {driverDetails.driverName}
             </Text>
             {otp && (
-              <Text style={[styles.waitingText, { color: '#4CAF50', marginTop: 15 }]}>
-                OTP: {otp}
-              </Text>
-            )}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Driver Details</Text>
+
+                    <Text style={styles.infoText}>👤 {driverDetails.driverName}</Text>
+                    <Text style={styles.infoText}>🔐 OTP: <Text style={styles.highlight}>{otp}</Text></Text>
+
+                    <Text style={[styles.cardTitle, { marginTop: 15 }]}>Vehicle Info</Text>
+                    <Text style={styles.infoText}>🚗 {vehicleInfo.year} {vehicleInfo.make} {vehicleInfo.model}</Text>
+                    <Text style={styles.infoText}>🎨 Color: {vehicleInfo.color}</Text>
+                    <Text style={styles.infoText}>🔢 Plate: {vehicleInfo.licensePlate}</Text>
+                </View>
+             )}
           </>
         ) : (
           <>
@@ -235,6 +252,42 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
             </TouchableOpacity>
           </>
         )}
+            <Modal isVisible={showRatingModal}>
+      <View style={styles.ratingContainer}>
+        <Text style={styles.ratingTitle}>Rate the driver</Text>
+        <AirbnbRating
+          defaultRating={5}
+          showRating={false}
+          onFinishRating={(value) => setRating(value)}
+        />
+        <TouchableOpacity
+          style={styles.ratingButton}
+          onPress={async () => {
+            setShowRatingModal(false);
+            try {
+                const d = getDatabase();
+                console.log('rating:',rating)
+                const rideRef = ref(d, `rideRequests/${realtimeId}`);
+                await update(rideRef, { isUserConfirmed: true ,Rating:rating});
+              Alert.alert('Thank you!', 'Your rating has been submitted.');
+              
+              // ✅ Now reset navigation to Dashboard
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Dashboard' }],
+                })
+              );
+            } catch (e) {
+              console.error('Rating submission error:', e);
+              Alert.alert('Error', 'Failed to submit rating.');
+            }
+          }}
+        >
+          <Text style={styles.ratingButtonText}>Submit</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
       </View>
     </View>
   );
@@ -265,6 +318,64 @@ const styles = StyleSheet.create({
   waitingText: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  card: {
+    backgroundColor: '#FFF8F0',
+    padding: 18,
+    borderRadius: 16,
+    marginTop: 20,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#6F4E37',
+    marginBottom: 6,
+  },
+  infoText: {
+    fontSize: 15,
+    color: '#333',
+    marginVertical: 2,
+  },
+  highlight: {
+    fontWeight: 'bold',
+    color: '#FF5722',
+  },
+  ratingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  
+  ratingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  
+  ratingButton: {
+    marginTop: 20,
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+  },
+  
+  ratingButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
@@ -341,6 +452,7 @@ const darkMapStyle = [
     elementType: 'labels.text.stroke',
     stylers: [{ color: '#17263c' }],
   },
+  
 ];
 
 export default RideWaiting;

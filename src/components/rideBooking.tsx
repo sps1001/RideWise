@@ -231,7 +231,7 @@ const RideBooking = () => {
       (currentHour >= 8 && currentHour <= 10) || (currentHour >= 18 && currentHour <= 21)
       ? 1.2 // Rush hour
       : 1.0;
-    const amt:Number =calculateDynamicFare(dist,duration, trafficFactor);
+    const amt:Number =calculateDynamicFare(dist,duration, trafficFactor,timeOfDayFactor);
 
     console.log('Adding ride request to Realtime DB');
     const user = auth.currentUser;
@@ -273,9 +273,10 @@ const RideBooking = () => {
   function calculateDynamicFare(
     distance ,
     duration,
-    trafficFactor
+    trafficFactor,
+    timeOfDayFactor 
   ) {
-    const baseFare = 30,perKmRate = 12,perMinRate = 2,demandIndex = 1,timeOfDayFactor = 1.0,weatherFactor = 1.0,tolls = 0,minimumFare = 5;
+    const baseFare = 30,perKmRate = 12,perMinRate = 2,demandIndex = 1,weatherFactor = 1.0,tolls = 0,minimumFare = 5;
     const surgeMultiplier = 1 + ((demandIndex - 1) * 0.25);
   
     const distanceFare = distance * perKmRate;
@@ -460,10 +461,6 @@ const RideBooking = () => {
           try {
             console.log('inside book button')
             const req= await addRideRequestToRealtimeDB();
-            Alert.alert(
-              'Ride Booked!',
-              `From: ${startLocation}\nTo: ${endLocation}\nDate: ${date.toDateString()}\nTime: ${date.toLocaleTimeString()}`
-              );
               console.log('startLat', startLat,'startLog', startLong)
               console.log('endLat', endLat,'endLog', endLong)
               console.log('requestId', req) 

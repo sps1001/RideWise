@@ -7,6 +7,7 @@ import { getDatabase, ref, get,set , ref as dbRef,update,remove,onValue} from 'f
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { collection,addDoc } from 'firebase/firestore';
 import { db ,auth} from '../service/firebase';
+import { Rating } from 'react-native-ratings';
 
 type RouteParams = {
   origin: { latitude: number; longitude: number };
@@ -178,6 +179,7 @@ const DriverRouteScreen = () => {
               status: 'Completed',
               distance: dist,
               duration: dur,
+              rating: data.Rating || 0,
             });
       
             await remove(rideRef);
@@ -269,32 +271,6 @@ const DriverRouteScreen = () => {
 export default DriverRouteScreen;
 
 const styles = StyleSheet.create({
-  button: {
-    position: 'absolute',
-    bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: '#007bff',
-    padding: 12,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  dropTextContainer: {
-    position: 'absolute',
-    bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: '#28a745',
-    padding: 12,
-    borderRadius: 10,
-    paddingHorizontal: 20,
-  },
-  dropText: {
-    color: '#fff',
-    fontSize: 16,
-  },
   modalContainer: {
     flex: 1,
     backgroundColor: '#00000099',
@@ -332,24 +308,70 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
+  button: {
+    position: 'absolute',
+    bottom: 30,
+    alignSelf: 'center',
+    backgroundColor: '#1E90FF', // softer blue
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  
+  buttonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  
+  dropTextContainer: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    backgroundColor: '#28a745',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  
+  dropText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  
   dropOffButton: {
-    backgroundColor: '#007BFF', // nice blue
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
+    backgroundColor: '#1E90FF',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    marginTop: 10,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+    marginTop: 120, // move it above the pickup button space
   },
   
   dropOffButtonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 17,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
+  
 });

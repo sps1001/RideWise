@@ -204,7 +204,20 @@ const RideRequests = () => {
   
     try {
       setProcessingId(rideId);
+      
+      const uid=await AsyncStorage.getItem('uid');
+      const driverRef = doc(collection(db, 'drivers'), uid);
+      const driverSnap = await getDoc(driverRef);
   
+      let driverData;
+      let vehicleInfo;
+      if (driverSnap.exists()) {
+         driverData = driverSnap.data();
+         console.log("Driver Data:", driverData);
+         vehicleInfo = driverData.vehicleInfo;
+        
+        console.log("Vehicle Info:", vehicleInfo);
+      }
       const dbRT = getDatabase();
       const rideRef = ref(dbRT, `rideRequests/${rideId}`);
       const rideSnap = await get(rideRef);
@@ -223,7 +236,7 @@ const RideRequests = () => {
         longitude: rideData.endLong
       };
       let driverName
-      const uid=await AsyncStorage.getItem('uid');
+      
       const driverDoc = await getDoc(doc(db, 'drivers', uid));
       if (driverDoc.exists()) {
           const driverData = driverDoc.data();
@@ -254,6 +267,13 @@ const RideRequests = () => {
         driverLocation: {
           latitude,
           longitude,
+        },
+        vehicleInfo: {
+          make: vehicleInfo.make,
+          model: vehicleInfo.model,
+          color: vehicleInfo.color,
+          licensePlate: vehicleInfo.licensePlate,
+          year: vehicleInfo.year,
         },
       });
   
