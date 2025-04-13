@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Switch } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDoc, onSnapshot ,doc,getDocs,updateDoc} from 'firebase/firestore';
 import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 import DashboardTemplate from './dashboardTemplate';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DriverDashboard = () => {
   const { isDarkMode } = useTheme();

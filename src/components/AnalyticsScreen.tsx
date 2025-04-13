@@ -39,8 +39,8 @@ const AnalyticsScreen = () => {
       let q = query(collection(db, targetCollection), where(userType === 'driver' ? 'driverId' : 'userId', '==', uid));
       const querySnapshot = await getDocs(q);
 
-      let total = 0, completed = 0, cancelled = 0;
-      let earnings = 0, cost = 0, distance = 0, time = 0;
+      let total :number = 0, completed:number = 0, cancelled :number= 0;
+      let earnings :number = 0, cost = 0, distance :number = 0, time :number = 0;
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -63,7 +63,7 @@ const AnalyticsScreen = () => {
         totalRides: total,
         completedRides: completed,
         cancelledRides: cancelled,
-        totalEarnings: earnings,
+        totalEarnings: earnings, 
         totalCost: cost,
         totalDistance: distance,
         totalTime: time,
@@ -104,13 +104,13 @@ const AnalyticsScreen = () => {
 
         {userType === 'driver' ? (
           <>
-            <StatCard icon="currency-inr" label="Total Earnings" value={`₹${stats.totalEarnings.toFixed(2)}`} gradient={['#f59e0b', '#fbbf24']} />
+            <StatCard icon="currency-inr" label="Total Earnings"  value={`₹${(stats.totalEarnings ?? 0)}`} gradient={['#f59e0b', '#fbbf24']} />
             <StatCard icon="map-marker-distance" label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} gradient={['#3b82f6', '#60a5fa']} />
             <StatCard icon="clock-outline" label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} gradient={['#8b5cf6', '#a78bfa']} />
           </>
-        ) : (
+        ) : ( 
           <>
-            <StatCard icon="currency-inr" label="Total Spent" value={`₹${stats.totalCost.toFixed(2)}`} gradient={['#f59e0b', '#fbbf24']} />
+            <StatCard icon="currency-inr" label="Total Spent"  value={`₹${(stats.totalCost ?? 0)}`} gradient={['#f59e0b', '#fbbf24']} />
             <StatCard icon="map-marker-distance" label="Distance Travelled" value={`${stats.totalDistance.toFixed(2)} km`} gradient={['#3b82f6', '#60a5fa']} />
             <StatCard icon="clock-outline" label="Time Spent" value={`${stats.totalTime.toFixed(1)} min`} gradient={['#8b5cf6', '#a78bfa']} />
           </>

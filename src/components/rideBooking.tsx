@@ -201,10 +201,38 @@ const RideBooking = () => {
   
     setIsSelectingEndSuggestion(false);
   };
+
+  const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const toRad = (val) => (val * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
   
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+  
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };  
 
 
   const addRideRequestToRealtimeDB = async () => {
+
+    const resp1=await fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${startLat},${startLong}&destination=${endLat},${endLong}&departure_time=now&key=${GOOGLE_MAPS_API_KEY}`);
+    const data1=await resp1.json();
+    const duration=data1.routes[0].legs[0].duration.value;
+    const trafficDuration=data1.routes[0].legs[0].duration_in_traffic.value;
+    const trafficFactor=trafficDuration/duration;
+    const dist=haversineDistance(startLat, startLong,endLat,endLong);
+    const currentHour = new Date().getHours();
+    const timeOfDayFactor = 
+      (currentHour >= 8 && currentHour <= 10) || (currentHour >= 18 && currentHour <= 21)
+      ? 1.2 // Rush hour
+      : 1.0;
+    const amt:Number =calculateDynamicFare(dist,duration, trafficFactor);
+
     console.log('Adding ride request to Realtime DB');
     const user = auth.currentUser;
     if (!user) {
@@ -228,7 +256,10 @@ const RideBooking = () => {
       date: date.toDateString(),
       time: new Date().toISOString(),
       requestedAt: Date.now(),
-      status: 'requested'
+      status: 'requested',
+      distance: dist,
+      duration: duration,
+      amount : Number(amt),
     };
   
     await set(newRequestRef, payload);
@@ -238,6 +269,27 @@ const RideBooking = () => {
     console.log('Ride request pushed to Realtime DB');
     return reqId;
   };
+
+  function calculateDynamicFare(
+    distance ,
+    duration,
+    trafficFactor
+  ) {
+    const baseFare = 30,perKmRate = 12,perMinRate = 2,demandIndex = 1,timeOfDayFactor = 1.0,weatherFactor = 1.0,tolls = 0,minimumFare = 5;
+    const surgeMultiplier = 1 + ((demandIndex - 1) * 0.25);
+  
+    const distanceFare = distance * perKmRate;
+    const timeFare = duration/60 * perMinRate * trafficFactor;
+  
+    let total = (baseFare + distanceFare + timeFare)
+                * surgeMultiplier 
+                * timeOfDayFactor
+                * weatherFactor
+                + tolls;
+    console.log('Total:', total);
+  
+    return parseFloat(Math.max(total, minimumFare).toFixed(2));
+  }
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkBackground]}>

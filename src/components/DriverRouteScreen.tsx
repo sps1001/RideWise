@@ -172,7 +172,7 @@ const DriverRouteScreen = () => {
               time: new Date().toLocaleTimeString(),
               from: data.from,
               to: data.to,
-              amount: data.amount || 100,
+              amount: Number(data.amount) || 100,
               user: data.userName,
               driverId:data.driverId,
               status: 'Completed',

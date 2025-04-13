@@ -47,21 +47,6 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
     }
   }, [origin, destination]);
 
-  const haversineDistance = (lat1, lon1, lat2, lon2) => {
-    const toRad = (val) => (val * Math.PI) / 180;
-    const R = 6371; // Earth radius in km
-  
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-  
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
   const calculateDuration = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
     console.log('Start:', start);
@@ -131,8 +116,7 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
               onPress: async () => {
                 await update(rideRef, { isUserConfirmed: true });
                 console.log('User confirmed ride completion');
-                Alert.alert('Success', 'Ride completed successfully.');
-                const dist=haversineDistance(rideData.startLat, rideData.startLong,rideData.endLat,rideData.endLong);
+                Alert.alert('Success', 'Ride completed successfully.');          
                 const dur=calculateDuration(rideData.time, new Date().toISOString());
                 await addDoc(collection(db, 'history'), {
                     userId: rideData.userId,
@@ -140,12 +124,12 @@ const RideWaiting: React.FC<Props> = ({ route }) => {
                     time: new Date().toLocaleTimeString(),
                     from: rideData.from,
                     to: rideData.to,
-                    amount: rideData.amount || 100,
+                    amount: Number(rideData.amount) || 100,
                     user: rideData.userName,
                     driverId:rideData.driverId,
                     driverName:rideData.driverName,
                     status: 'Completed',
-                    distance:dist,
+                    distance:rideData.distance,
                     duration:dur,
                   });
                 navigation.dispatch(

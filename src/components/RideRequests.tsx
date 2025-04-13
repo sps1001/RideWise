@@ -4,12 +4,13 @@ import {
   Alert, ActivityIndicator 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, writeBatch,getDoc } from 'firebase/firestore';
 import { getDatabase, ref, push, set ,get,update} from 'firebase/database';
 import { auth, db } from '../service/firebase';
 import { useTheme } from '../service/themeContext';
 import * as Location from 'expo-location';
 import { navigate } from 'expo-router/build/global-state/routing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RideRequests = () => {
   const { isDarkMode } = useTheme();
@@ -95,7 +96,7 @@ const RideRequests = () => {
               filtered.push({
                 id: key,
                 ...value,
-                distance: distance.toFixed(2)
+                dist: distance.toFixed(2)
               });
             }
           }
@@ -211,7 +212,15 @@ const RideRequests = () => {
         latitude: rideData.endLat,
         longitude: rideData.endLong
       };
-      const driverName = auth.currentUser.displayName || 'Driver';
+      let driverName
+      const uid=AsyncStorage.getItem('uid');
+      const driverDoc = await getDoc(doc(db, 'drivers', uid));
+      if (driverDoc.exists()) {
+          const driverData = driverDoc.data();
+          driverName = driverData.username;
+      } else {
+          driverName = 'Driver';
+      }
       const timestamp = new Date();
   
       // ✅ Get driver current location using expo-location
@@ -346,13 +355,18 @@ const RideRequests = () => {
               <Text style={styles.dateText}>{item.date} at {item.time}</Text>
               
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Distance:</Text>
-                <Text style={styles.detailValue}>{item.distance || 'Not specified'}</Text>
+                <Text style={styles.detailLabel}>Distance from you:</Text>
+                <Text style={styles.detailValue}>{item.dist || 'Not specified'} km</Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Route Distance :</Text>
+                <Text style={styles.detailValue}>{item.distance || 'Not specified'} km</Text>
               </View>
               
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Est. Fare:</Text>
-                <Text style={styles.detailValue}>{item.fare || 'Not calculated'}</Text>
+                <Text style={styles.detailValue}>{item.amount || 'Not calculated'}</Text>
               </View>
               
               {/* Only show action buttons for non-rejected rides */}
